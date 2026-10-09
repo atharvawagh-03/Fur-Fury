@@ -1,0 +1,332 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --color-bg-dark: #0a0b10;
+  --color-gold-primary: #e5b85e;
+  --color-gold-light: #fbe3a1;
+  --color-gold-dark: #916f2b;
+  --color-crimson: #d9383a;
+  --color-ember: #ff7722;
+  --color-surface: rgba(18, 20, 29, 0.78);
+  --color-surface-border: rgba(229, 184, 94, 0.28);
+  --color-text-light: #f5f4f0;
+  --color-text-dim: #9e9ea7;
+  --font-display: 'Cinzel', serif;
+  --font-body: 'Outfit', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--color-bg-dark);
+  font-family: var(--font-body);
+  color: var(--color-text-light);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+#canvas-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Base interactive wrapper */
+.game-hud {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+}
+
+/* Header */
+.hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  pointer-events: auto;
+}
+
+.brand-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.game-title {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  background: linear-gradient(135deg, #ffffff 0%, var(--color-gold-light) 40%, var(--color-gold-primary) 70%, var(--color-gold-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 12px rgba(229, 184, 94, 0.4));
+  line-height: 1.1;
+}
+
+.game-tagline {
+  font-size: 0.85rem;
+  color: var(--color-gold-primary);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 0.35rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+/* Hero Badge */
+.hero-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  backdrop-filter: blur(12px);
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.hero-avatar {
+  font-size: 1.5rem;
+  background: rgba(229, 184, 94, 0.15);
+  border: 1px solid rgba(229, 184, 94, 0.4);
+  width: 2.4rem;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.hero-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.hero-name {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-gold-light);
+  letter-spacing: 0.05em;
+}
+
+.hero-title {
+  font-size: 0.72rem;
+  color: var(--color-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hero-weapon {
+  font-size: 0.7rem;
+  color: var(--color-gold-primary);
+}
+
+/* Milestone Badge */
+.milestone-badge {
+  position: absolute;
+  top: 5.5rem;
+  left: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(18, 20, 29, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+}
+
+.milestone-badge .pill {
+  background: linear-gradient(135deg, #1b74e4, #0d47a1);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.milestone-badge .milestone-desc {
+  font-size: 0.78rem;
+  color: var(--color-text-dim);
+}
+
+/* Telemetry & Diagnostics */
+.telemetry-panel {
+  position: absolute;
+  top: 5.5rem;
+  right: 2rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  backdrop-filter: blur(12px);
+  padding: 0.8rem 1.1rem;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+}
+
+.telemetry-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  font-size: 0.75rem;
+}
+
+.telemetry-item .label {
+  color: var(--color-text-dim);
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.telemetry-item .value {
+  color: var(--color-text-light);
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.telemetry-item .value.highlight {
+  color: var(--color-gold-light);
+}
+
+/* Control Deck */
+.control-deck {
+  position: absolute;
+  bottom: 5.5rem;
+  left: 2rem;
+  display: flex;
+  gap: 0.75rem;
+  pointer-events: auto;
+}
+
+.btn-action {
+  background: linear-gradient(135deg, rgba(229, 184, 94, 0.25), rgba(229, 184, 94, 0.1));
+  border: 1px solid var(--color-gold-primary);
+  color: var(--color-gold-light);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-action:hover {
+  background: linear-gradient(135deg, rgba(229, 184, 94, 0.45), rgba(229, 184, 94, 0.2));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(229, 184, 94, 0.3);
+  color: #ffffff;
+}
+
+.btn-action:active {
+  transform: translateY(1px);
+}
+
+.btn-action.secondary {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-light);
+}
+
+.btn-action.secondary:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Footer / Legend */
+.hud-footer {
+  pointer-events: auto;
+}
+
+.controls-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  background: var(--color-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  padding: 0.65rem 1.1rem;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.legend-chip {
+  font-size: 0.74rem;
+  color: var(--color-text-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-chip kbd {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--color-gold-light);
+  font-family: monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .game-hud {
+    padding: 1rem;
+  }
+  .game-title {
+    font-size: 1.6rem;
+  }
+  .telemetry-panel, .milestone-badge {
+    display: none;
+  }
+  .control-deck {
+    bottom: 6rem;
+  }
+}

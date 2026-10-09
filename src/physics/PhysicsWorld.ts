@@ -115,6 +115,41 @@ export class PhysicsWorld {
     return { body, collider };
   }
 
+  /**
+   * Helper to create a kinematic capsule for character controllers
+   */
+  public createKinematicCapsule(
+    posX: number,
+    posY: number,
+    posZ: number,
+    radius: number,
+    halfHeight: number
+  ): { body: RAPIER.RigidBody; collider: RAPIER.Collider } | null {
+    if (!this.world) return null;
+
+    const bodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(posX, posY, posZ);
+    const body = this.world.createRigidBody(bodyDesc);
+    const colliderDesc = RAPIER.ColliderDesc.capsule(halfHeight, radius)
+      .setFriction(0.2)
+      .setRestitution(0.0);
+    const collider = this.world.createCollider(colliderDesc, body);
+
+    return { body, collider };
+  }
+
+  /**
+   * Helper to create a Rapier KinematicCharacterController
+   */
+  public createCharacterController(offset: number = 0.02): RAPIER.KinematicCharacterController | null {
+    if (!this.world) return null;
+
+    const controller = this.world.createCharacterController(offset);
+    controller.enableAutostep(0.25, 0.15, true);
+    controller.enableSnapToGround(0.2);
+    controller.setUp(new RAPIER.Vector3(0, 1, 0));
+    return controller;
+  }
+
   public dispose(): void {
     if (this.world) {
       this.world.free();

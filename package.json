@@ -8,7 +8,7 @@
     "dev": "node ./node_modules/vite/bin/vite.js",
     "build": "node ./node_modules/typescript/bin/tsc && node ./node_modules/vite/bin/vite.js build",
     "preview": "node ./node_modules/vite/bin/vite.js preview",
-    "test": "node --import tsx --test tests/core.test.ts tests/physics.test.ts tests/world.test.ts"
+    "test": "node --import tsx --test tests/core.test.ts tests/physics.test.ts tests/world.test.ts tests/character.test.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.14.0",

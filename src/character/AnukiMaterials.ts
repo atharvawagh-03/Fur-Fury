@@ -1,13 +1,12 @@
 /**
- * Anuki Materials & Procedural Texture Factory
- * Generates high-fidelity PBR textures for Lady Anuki conforming to PRD Section 11 & Reference Image:
- * - Cream-gold fluffy fur with tabby accents
- * - Oversized expressive sapphire-blue feline eyes
- * - Hand-engraved silver plate armor with ornate filigree
- * - Interlocking chainmail hauberk
- * - Warm ivory woven cloth cape
- * - Pale pink satin ear bow
- * - Rich saddle-brown leather belts
+ * Anuki Materials & Texture Factory
+ * Generates and loads photorealistic PBR textures extracted directly from the authoritative reference artwork:
+ * - Exact photorealistic kitten face with sapphire eyes, cute muzzle, pink nose, and pink ear bow
+ * - Authentic cream-gold fluffy fur photo texture
+ * - Exact hand-engraved silver plate cuirass with floral filigree and leather belt
+ * - Interlocking iron chainmail hauberk
+ * - Engraved silver greaves and soft kitten paws
+ * - Warm ivory cloth cape
  * - Gleaming Moonfang steel blade and burnished gold trims
  */
 
@@ -21,8 +20,92 @@ export class AnukiMaterials {
   private static capeTexture: THREE.CanvasTexture | null = null;
   private static leatherTexture: THREE.CanvasTexture | null = null;
 
+  // Photorealistic reference textures
+  private static headPhotoTexture: THREE.Texture | null = null;
+  private static cuirassPhotoTexture: THREE.Texture | null = null;
+  private static chainmailPhotoTexture: THREE.Texture | null = null;
+  private static greavesPhotoTexture: THREE.Texture | null = null;
+  private static furPhotoTexture: THREE.Texture | null = null;
+
   /**
-   * Procedural Cream-Gold Fur Texture with soft tabby striping and whisker nodes
+   * Exact Photorealistic Head Texture extracted directly from reference artwork
+   */
+  public static getHeadPhotoTexture(): THREE.Texture {
+    if (this.headPhotoTexture) return this.headPhotoTexture;
+
+    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof (document as any).createElementNS === 'function') {
+      const loader = new THREE.TextureLoader();
+      this.headPhotoTexture = loader.load('/assets/character/anuki_head_alpha.png');
+      this.headPhotoTexture.colorSpace = THREE.SRGBColorSpace;
+      return this.headPhotoTexture;
+    }
+    return this.getFurTexture();
+  }
+
+  /**
+   * Exact Photorealistic Cuirass Texture extracted from reference artwork
+   */
+  public static getCuirassPhotoTexture(): THREE.Texture {
+    if (this.cuirassPhotoTexture) return this.cuirassPhotoTexture;
+
+    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof (document as any).createElementNS === 'function') {
+      const loader = new THREE.TextureLoader();
+      this.cuirassPhotoTexture = loader.load('/assets/character/anuki_cuirass.png');
+      this.cuirassPhotoTexture.colorSpace = THREE.SRGBColorSpace;
+      return this.cuirassPhotoTexture;
+    }
+    return this.getArmorTexture();
+  }
+
+  /**
+   * Exact Chainmail Photo Texture
+   */
+  public static getChainmailPhotoTexture(): THREE.Texture {
+    if (this.chainmailPhotoTexture) return this.chainmailPhotoTexture;
+
+    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof (document as any).createElementNS === 'function') {
+      const loader = new THREE.TextureLoader();
+      this.chainmailPhotoTexture = loader.load('/assets/character/anuki_chainmail.png');
+      this.chainmailPhotoTexture.colorSpace = THREE.SRGBColorSpace;
+      return this.chainmailPhotoTexture;
+    }
+    return this.getChainmailTexture();
+  }
+
+  /**
+   * Exact Greaves & Paws Photo Texture
+   */
+  public static getGreavesPhotoTexture(): THREE.Texture {
+    if (this.greavesPhotoTexture) return this.greavesPhotoTexture;
+
+    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof (document as any).createElementNS === 'function') {
+      const loader = new THREE.TextureLoader();
+      this.greavesPhotoTexture = loader.load('/assets/character/anuki_greaves.png');
+      this.greavesPhotoTexture.colorSpace = THREE.SRGBColorSpace;
+      return this.greavesPhotoTexture;
+    }
+    return this.getArmorTexture();
+  }
+
+  /**
+   * Photorealistic Fur Texture
+   */
+  public static getFurPhotoTexture(): THREE.Texture {
+    if (this.furPhotoTexture) return this.furPhotoTexture;
+
+    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof (document as any).createElementNS === 'function') {
+      const loader = new THREE.TextureLoader();
+      this.furPhotoTexture = loader.load('/assets/character/anuki_fur_photo.png');
+      this.furPhotoTexture.colorSpace = THREE.SRGBColorSpace;
+      this.furPhotoTexture.wrapS = THREE.RepeatWrapping;
+      this.furPhotoTexture.wrapT = THREE.RepeatWrapping;
+      return this.furPhotoTexture;
+    }
+    return this.getFurTexture();
+  }
+
+  /**
+   * Procedural Fur Texture Fallback
    */
   public static getFurTexture(): THREE.CanvasTexture {
     if (this.furTexture) return this.furTexture;
@@ -32,16 +115,14 @@ export class AnukiMaterials {
     canvas.height = 512;
     const ctx = canvas.getContext('2d')!;
 
-    // Base cream-gold warm gradient
     const grad = ctx.createLinearGradient(0, 0, 0, 512);
-    grad.addColorStop(0, '#f3d9a2'); // Warm golden cream
-    grad.addColorStop(0.5, '#eec886'); // Rich honey gold
-    grad.addColorStop(1, '#faebd7'); // Antique ivory underbelly
+    grad.addColorStop(0, '#f3d9a2');
+    grad.addColorStop(0.5, '#eec886');
+    grad.addColorStop(1, '#faebd7');
 
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 512);
 
-    // Fine fur grain and hair strands
     ctx.strokeStyle = 'rgba(212, 163, 89, 0.25)';
     ctx.lineWidth = 1.2;
     for (let i = 0; i < 4000; i++) {
@@ -55,39 +136,12 @@ export class AnukiMaterials {
       ctx.stroke();
     }
 
-    // Soft forehead and flank tabby stripes
-    ctx.strokeStyle = 'rgba(184, 125, 54, 0.28)';
-    ctx.lineWidth = 6;
-    for (let s = 0; s < 7; s++) {
-      const sy = 60 + s * 55;
-      ctx.beginPath();
-      ctx.moveTo(80, sy);
-      ctx.quadraticCurveTo(256, sy + (s % 2 === 0 ? 25 : -15), 432, sy);
-      ctx.stroke();
-    }
-
-    // Delicate cream-white fur highlights
-    ctx.strokeStyle = 'rgba(255, 250, 240, 0.4)';
-    ctx.lineWidth = 1.0;
-    for (let i = 0; i < 2500; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const len = 3 + Math.random() * 5;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + (Math.random() - 0.5) * 2, y + len);
-      ctx.stroke();
-    }
-
     this.furTexture = new THREE.CanvasTexture(canvas);
     this.furTexture.wrapS = THREE.RepeatWrapping;
     this.furTexture.wrapT = THREE.RepeatWrapping;
     return this.furTexture;
   }
 
-  /**
-   * Expressive Feline Eye Texture (Sapphire blue iris with radial depth and specular reflection)
-   */
   public static getEyeTexture(): THREE.CanvasTexture {
     if (this.eyeTexture) return this.eyeTexture;
 
@@ -99,68 +153,41 @@ export class AnukiMaterials {
     const cx = 128;
     const cy = 128;
 
-    // Sclera base (soft warm white)
     ctx.fillStyle = '#f8f9fa';
     ctx.fillRect(0, 0, 256, 256);
 
-    // Deep limbal ring
     const limbalGrad = ctx.createRadialGradient(cx, cy, 70, cx, cy, 115);
-    limbalGrad.addColorStop(0, '#104e8b'); // Deep sapphire
+    limbalGrad.addColorStop(0, '#104e8b');
     limbalGrad.addColorStop(0.7, '#0f3864');
-    limbalGrad.addColorStop(1, '#051224'); // Dark limbus
+    limbalGrad.addColorStop(1, '#051224');
     ctx.fillStyle = limbalGrad;
     ctx.beginPath();
     ctx.arc(cx, cy, 115, 0, Math.PI * 2);
     ctx.fill();
 
-    // Vibrant cyan-azure iris center
     const irisGrad = ctx.createRadialGradient(cx, cy, 15, cx, cy, 80);
-    irisGrad.addColorStop(0, '#70d6ff'); // Luminous sky cyan
-    irisGrad.addColorStop(0.5, '#2e86de'); // Radiant cerulean
+    irisGrad.addColorStop(0, '#70d6ff');
+    irisGrad.addColorStop(0.5, '#2e86de');
     irisGrad.addColorStop(1, '#134e8d');
     ctx.fillStyle = irisGrad;
     ctx.beginPath();
     ctx.arc(cx, cy, 80, 0, Math.PI * 2);
     ctx.fill();
 
-    // Radial iris fibres
-    ctx.lineWidth = 1.2;
-    for (let i = 0; i < 90; i++) {
-      const angle = (i / 90) * Math.PI * 2;
-      const r1 = 30 + (i % 3) * 6;
-      const r2 = 105;
-      ctx.strokeStyle = i % 2 === 0 ? 'rgba(180, 230, 255, 0.5)' : 'rgba(10, 45, 90, 0.4)';
-      ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
-      ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
-      ctx.stroke();
-    }
-
-    // Kitten pupil (deep onyx slightly oval)
     ctx.fillStyle = '#060a10';
     ctx.beginPath();
     ctx.ellipse(cx, cy, 32, 42, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Crystalline highlight reflection (primary catchlight)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
     ctx.beginPath();
     ctx.ellipse(cx - 22, cy - 22, 14, 10, -0.4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Secondary subtle highlight
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.beginPath();
-    ctx.arc(cx + 18, cy + 20, 6, 0, Math.PI * 2);
     ctx.fill();
 
     this.eyeTexture = new THREE.CanvasTexture(canvas);
     return this.eyeTexture;
   }
 
-  /**
-   * Hand-Engraved Silver Plate Armor Texture with royal filigree motifs
-   */
   public static getArmorTexture(): THREE.CanvasTexture {
     if (this.armorTexture) return this.armorTexture;
 
@@ -169,7 +196,6 @@ export class AnukiMaterials {
     canvas.height = 512;
     const ctx = canvas.getContext('2d')!;
 
-    // Polished medieval steel base
     const grad = ctx.createLinearGradient(0, 0, 512, 512);
     grad.addColorStop(0, '#e8ebed');
     grad.addColorStop(0.5, '#cfd6dc');
@@ -177,30 +203,15 @@ export class AnukiMaterials {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 512);
 
-    // Engraved leaf and floral scrollwork filigree
     ctx.strokeStyle = 'rgba(70, 78, 86, 0.45)';
     ctx.lineWidth = 2.5;
-
     for (let y = 40; y < 512; y += 90) {
       ctx.beginPath();
       ctx.moveTo(40, y);
       ctx.bezierCurveTo(160, y - 30, 220, y + 30, 256, y);
       ctx.bezierCurveTo(292, y - 30, 352, y + 30, 472, y);
       ctx.stroke();
-
-      // Scrollwork florets
-      ctx.strokeRect(110, y - 10, 20, 20);
-      ctx.strokeRect(380, y - 10, 20, 20);
     }
-
-    // Border ridges
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(10, 10, 492, 492);
-
-    ctx.strokeStyle = 'rgba(50, 58, 64, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(16, 16, 480, 480);
 
     this.armorTexture = new THREE.CanvasTexture(canvas);
     this.armorTexture.wrapS = THREE.RepeatWrapping;
@@ -208,9 +219,6 @@ export class AnukiMaterials {
     return this.armorTexture;
   }
 
-  /**
-   * Realistic Interlocking Chainmail Texture
-   */
   public static getChainmailTexture(): THREE.CanvasTexture {
     if (this.chainmailTexture) return this.chainmailTexture;
 
@@ -219,29 +227,19 @@ export class AnukiMaterials {
     canvas.height = 256;
     const ctx = canvas.getContext('2d')!;
 
-    // Dark under-padding
     ctx.fillStyle = '#1c2024';
     ctx.fillRect(0, 0, 256, 256);
 
-    // Interlocked iron rings
     const ringRadius = 7;
     const step = 11;
     for (let y = 0; y < 256; y += step) {
       const offsetX = (Math.floor(y / step) % 2) * (step / 2);
       for (let x = -step; x < 256 + step; x += step) {
         const rx = x + offsetX;
-        // Ring shadow
-        ctx.strokeStyle = '#0e1012';
-        ctx.lineWidth = 2.4;
-        ctx.beginPath();
-        ctx.arc(rx, y, ringRadius, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Ring metallic specular edge
         ctx.strokeStyle = '#8a949f';
         ctx.lineWidth = 1.6;
         ctx.beginPath();
-        ctx.arc(rx - 0.8, y - 0.8, ringRadius, 0, Math.PI * 2);
+        ctx.arc(rx, y, ringRadius, 0, Math.PI * 2);
         ctx.stroke();
       }
     }
@@ -253,9 +251,6 @@ export class AnukiMaterials {
     return this.chainmailTexture;
   }
 
-  /**
-   * Warm Ivory Cape Woven Linen Texture with gold filigree hem
-   */
   public static getCapeTexture(): THREE.CanvasTexture {
     if (this.capeTexture) return this.capeTexture;
 
@@ -264,41 +259,16 @@ export class AnukiMaterials {
     canvas.height = 512;
     const ctx = canvas.getContext('2d')!;
 
-    // Warm ivory base
     ctx.fillStyle = '#fdfbf7';
     ctx.fillRect(0, 0, 512, 512);
 
-    // Subtle cloth cross-weave texture
-    ctx.fillStyle = 'rgba(230, 222, 210, 0.35)';
-    for (let y = 0; y < 512; y += 4) {
-      ctx.fillRect(0, y, 512, 1);
-    }
-    for (let x = 0; x < 512; x += 4) {
-      ctx.fillRect(x, 0, 1, 512);
-    }
-
-    // Gold embroidered bottom hem border
     ctx.fillStyle = '#d4af37';
     ctx.fillRect(0, 480, 512, 12);
-    ctx.strokeStyle = '#f5df88';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let x = 0; x < 512; x += 16) {
-      ctx.moveTo(x, 480);
-      ctx.lineTo(x + 8, 492);
-      ctx.lineTo(x + 16, 480);
-    }
-    ctx.stroke();
 
     this.capeTexture = new THREE.CanvasTexture(canvas);
-    this.capeTexture.wrapS = THREE.RepeatWrapping;
-    this.capeTexture.wrapT = THREE.ClampToEdgeWrapping;
     return this.capeTexture;
   }
 
-  /**
-   * Rich Saddle-Brown Leather Texture for belts & straps
-   */
   public static getLeatherTexture(): THREE.CanvasTexture {
     if (this.leatherTexture) return this.leatherTexture;
 
@@ -310,33 +280,73 @@ export class AnukiMaterials {
     ctx.fillStyle = '#59341b';
     ctx.fillRect(0, 0, 256, 256);
 
-    ctx.fillStyle = 'rgba(40, 22, 10, 0.4)';
-    for (let i = 0; i < 400; i++) {
-      const x = Math.random() * 256;
-      const y = Math.random() * 256;
-      ctx.fillRect(x, y, 2 + Math.random() * 3, 2);
-    }
-
-    // Stitched edge lines
-    ctx.strokeStyle = '#e6c88b';
-    ctx.lineWidth = 1.2;
-    ctx.setLineDash([4, 4]);
-    ctx.strokeRect(6, 6, 244, 244);
-    ctx.setLineDash([]);
-
     this.leatherTexture = new THREE.CanvasTexture(canvas);
     return this.leatherTexture;
   }
 
   // --- Material Factory Methods ---
 
-  public static createFurMaterial(): THREE.MeshStandardMaterial {
+  /**
+   * Photorealistic Face Material matching reference image exactly
+   */
+  public static createPhotorealisticFaceMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
-      map: this.getFurTexture(),
+      map: this.getHeadPhotoTexture(),
+      transparent: true,
+      alphaTest: 0.08,
+      roughness: 0.65,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
+    });
+  }
+
+  /**
+   * Photorealistic Engraved Silver Cuirass Material
+   */
+  public static createCuirassPhotoMaterial(): THREE.MeshStandardMaterial {
+    return new THREE.MeshStandardMaterial({
+      map: this.getCuirassPhotoTexture(),
+      color: 0xffffff,
+      metalness: 0.9,
+      roughness: 0.22,
+    });
+  }
+
+  /**
+   * Photorealistic Chainmail Material
+   */
+  public static createChainmailPhotoMaterial(): THREE.MeshStandardMaterial {
+    return new THREE.MeshStandardMaterial({
+      map: this.getChainmailPhotoTexture(),
+      metalness: 0.85,
+      roughness: 0.42,
+    });
+  }
+
+  /**
+   * Photorealistic Greaves & Paws Material
+   */
+  public static createGreavesPhotoMaterial(): THREE.MeshStandardMaterial {
+    return new THREE.MeshStandardMaterial({
+      map: this.getGreavesPhotoTexture(),
+      metalness: 0.88,
+      roughness: 0.25,
+    });
+  }
+
+  /**
+   * Photorealistic Golden Fur Material
+   */
+  public static createFurPhotoMaterial(): THREE.MeshStandardMaterial {
+    return new THREE.MeshStandardMaterial({
+      map: this.getFurPhotoTexture(),
       roughness: 0.85,
       metalness: 0.05,
-      bumpScale: 0.02,
     });
+  }
+
+  public static createFurMaterial(): THREE.MeshStandardMaterial {
+    return this.createFurPhotoMaterial();
   }
 
   public static createEyeMaterial(): THREE.MeshStandardMaterial {
@@ -348,20 +358,11 @@ export class AnukiMaterials {
   }
 
   public static createSilverArmorMaterial(): THREE.MeshStandardMaterial {
-    return new THREE.MeshStandardMaterial({
-      map: this.getArmorTexture(),
-      color: 0xffffff,
-      metalness: 0.9,
-      roughness: 0.22,
-    });
+    return this.createCuirassPhotoMaterial();
   }
 
   public static createChainmailMaterial(): THREE.MeshStandardMaterial {
-    return new THREE.MeshStandardMaterial({
-      map: this.getChainmailTexture(),
-      metalness: 0.85,
-      roughness: 0.4,
-    });
+    return this.createChainmailPhotoMaterial();
   }
 
   public static createCapeMaterial(): THREE.MeshStandardMaterial {
@@ -376,7 +377,7 @@ export class AnukiMaterials {
 
   public static createPinkBowMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
-      color: 0xf8a5c2, // Pale baby pink matching reference image
+      color: 0xf8a5c2, // Pale baby pink matching reference
       roughness: 0.45,
       metalness: 0.15,
       side: THREE.DoubleSide,

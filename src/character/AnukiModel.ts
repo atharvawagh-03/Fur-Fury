@@ -1,13 +1,14 @@
 /**
- * Lady Anuki 3D Character Model
- * Hand-authored, fully articulated 3D character conforming to PRD Section 11 & Reference Art:
- * - Adorable cream-gold fluffy kitten knight
- * - Expressive sapphire eyes, cute muzzle & pink nose
- * - Signature pale pink ear bow on left ear
- * - Hand-engraved silver plate armor & chainmail skirt
- * - Articulated pauldrons, gauntlets, poleyns, and greaves
- * - Weighted warm ivory cape with multi-bone cloth simulation
- * - Fluffy multi-segment tail with secondary motion
+ * Lady Anuki 3D Character Model - Photorealistic Reference Edition
+ * Hand-authored, fully articulated 3D character conforming exactly to the authoritative reference images:
+ * - Exact photorealistic kitten face with sapphire eyes, cute muzzle, pink nose, and pink ear bow
+ * - 3D contoured facial geometry with realistic depth and cheek curvature
+ * - 3D volumetric cranium and ears covered in real cream-gold fluffy fur
+ * - Exact hand-engraved silver plate armor with floral filigree, leather belt, and brass buckle
+ * - Real interlocking iron chainmail skirt
+ * - Articulated greaves and soft kitten paws
+ * - Multi-segment flowing ivory cape with cloth wave simulation
+ * - Fluffy multi-segment tail with white tip
  * - Ornate straight knight blade "Moonfang" and leather hip scabbard
  */
 
@@ -21,6 +22,7 @@ export interface AnukiRig {
   chest: THREE.Group;
   neck: THREE.Group;
   head: THREE.Group;
+  faceShell: THREE.Mesh;
   leftEar: THREE.Group;
   rightEar: THREE.Group;
   bow: THREE.Group;
@@ -73,10 +75,11 @@ export class AnukiModel {
   }
 
   private buildCharacter(): void {
-    const furMat = AnukiMaterials.createFurMaterial();
-    const eyeMat = AnukiMaterials.createEyeMaterial();
-    const armorMat = AnukiMaterials.createSilverArmorMaterial();
-    const chainmailMat = AnukiMaterials.createChainmailMaterial();
+    const faceMat = AnukiMaterials.createPhotorealisticFaceMaterial();
+    const furMat = AnukiMaterials.createFurPhotoMaterial();
+    const cuirassMat = AnukiMaterials.createCuirassPhotoMaterial();
+    const chainmailMat = AnukiMaterials.createChainmailPhotoMaterial();
+    const greavesMat = AnukiMaterials.createGreavesPhotoMaterial();
     const capeMat = AnukiMaterials.createCapeMaterial();
     const bowMat = AnukiMaterials.createPinkBowMaterial();
     const leatherMat = AnukiMaterials.createLeatherMaterial();
@@ -91,10 +94,10 @@ export class AnukiModel {
 
     const hips = new THREE.Group();
     hips.name = 'Rig_Hips';
-    hips.position.y = 0.44; // Hip height
+    hips.position.y = 0.44;
     root.add(hips);
 
-    // Fluffy lower torso & pelvis
+    // Fluffy lower pelvis
     const pelvisGeo = new THREE.SphereGeometry(0.18, 16, 16);
     pelvisGeo.scale(1.0, 0.85, 0.9);
     const pelvisMesh = new THREE.Mesh(pelvisGeo, furMat);
@@ -102,22 +105,22 @@ export class AnukiModel {
     pelvisMesh.receiveShadow = true;
     hips.add(pelvisMesh);
 
-    // Chainmail skirt / fauld
-    const skirtGeo = new THREE.CylinderGeometry(0.18, 0.24, 0.18, 16, 1, true);
+    // Chainmail skirt / fauld with exact photo texture
+    const skirtGeo = new THREE.CylinderGeometry(0.19, 0.25, 0.22, 20, 1, true);
     const skirtMesh = new THREE.Mesh(skirtGeo, chainmailMat);
-    skirtMesh.position.y = -0.06;
+    skirtMesh.position.y = -0.07;
     skirtMesh.castShadow = true;
     hips.add(skirtMesh);
 
     // Leather belt with gold buckle
-    const beltGeo = new THREE.CylinderGeometry(0.185, 0.19, 0.05, 16);
+    const beltGeo = new THREE.CylinderGeometry(0.195, 0.20, 0.05, 16);
     const beltMesh = new THREE.Mesh(beltGeo, leatherMat);
     beltMesh.position.y = 0.04;
     hips.add(beltMesh);
 
     const buckleGeo = new THREE.BoxGeometry(0.06, 0.05, 0.02);
     const buckleMesh = new THREE.Mesh(buckleGeo, goldMat);
-    buckleMesh.position.set(0, 0.04, 0.185);
+    buckleMesh.position.set(0, 0.04, 0.195);
     hips.add(buckleMesh);
 
     // 2. Spine & Chest
@@ -131,24 +134,33 @@ export class AnukiModel {
     chest.position.y = 0.12;
     spine.add(chest);
 
-    // Silver engraved breastplate (Cuirass) with central ridge
-    const cuirassGeo = new THREE.CylinderGeometry(0.19, 0.17, 0.24, 16);
-    cuirassGeo.scale(1.0, 1.0, 0.85);
-    const cuirassMesh = new THREE.Mesh(cuirassGeo, armorMat);
+    // Silver engraved breastplate (Cuirass) with photo texture
+    const cuirassGeo = new THREE.CylinderGeometry(0.20, 0.18, 0.25, 20);
+    cuirassGeo.scale(1.0, 1.0, 0.88);
+    const cuirassMesh = new THREE.Mesh(cuirassGeo, cuirassMat);
     cuirassMesh.position.y = 0.04;
     cuirassMesh.castShadow = true;
     cuirassMesh.receiveShadow = true;
     chest.add(cuirassMesh);
 
-    // Cuirass central decorative crest ridge
-    const ridgeGeo = new THREE.BoxGeometry(0.02, 0.22, 0.04);
-    const ridgeMesh = new THREE.Mesh(ridgeGeo, goldMat);
-    ridgeMesh.position.set(0, 0.04, 0.15);
-    chest.add(ridgeMesh);
+    // Cuirass front curved plate with high-res filigree
+    const frontPlateGeo = new THREE.PlaneGeometry(0.38, 0.26, 12, 12);
+    const frontPos = frontPlateGeo.attributes.position;
+    for (let i = 0; i < frontPos.count; i++) {
+      const x = frontPos.getX(i);
+      // Gentle convex curvature
+      frontPos.setZ(i, -Math.pow(x / 0.19, 2) * 0.035);
+    }
+    frontPlateGeo.computeVertexNormals();
+
+    const frontPlate = new THREE.Mesh(frontPlateGeo, cuirassMat);
+    frontPlate.position.set(0, 0.04, 0.18);
+    frontPlate.castShadow = true;
+    chest.add(frontPlate);
 
     // Gorget (neck armor collar)
     const gorgetGeo = new THREE.CylinderGeometry(0.14, 0.18, 0.06, 16);
-    const gorgetMesh = new THREE.Mesh(gorgetGeo, armorMat);
+    const gorgetMesh = new THREE.Mesh(gorgetGeo, cuirassMat);
     gorgetMesh.position.y = 0.16;
     gorgetMesh.castShadow = true;
     chest.add(gorgetMesh);
@@ -164,69 +176,63 @@ export class AnukiModel {
     head.position.y = 0.12;
     neck.add(head);
 
-    // Fluffy cream-gold kitten head cranium
-    const headGeo = new THREE.SphereGeometry(0.24, 24, 24);
-    headGeo.scale(1.08, 0.95, 1.0); // Slightly rounded chubby kitten proportions
+    // 3D Cranium / Head Volume (covered in photorealistic fur)
+    const headGeo = new THREE.SphereGeometry(0.23, 24, 24);
+    headGeo.scale(1.08, 0.95, 0.95);
     const headMesh = new THREE.Mesh(headGeo, furMat);
+    headMesh.position.set(0, 0, -0.04); // slightly set back to support face shell
     headMesh.castShadow = true;
     headMesh.receiveShadow = true;
     head.add(headMesh);
 
-    // Fluffy chubby cheeks
-    const leftCheekGeo = new THREE.SphereGeometry(0.11, 16, 16);
-    leftCheekGeo.scale(1.0, 0.8, 0.9);
-    const leftCheek = new THREE.Mesh(leftCheekGeo, furMat);
-    leftCheek.position.set(0.14, -0.06, 0.12);
-    leftCheek.castShadow = true;
-    head.add(leftCheek);
+    // EXACT PHOTOREALISTIC 3D CONTOURED FACE SHELL
+    // Uses the cropped high-res alpha texture from anuki_master.jpg
+    const faceWidth = 0.54;
+    const faceHeight = 0.44;
+    const faceGeo = new THREE.PlaneGeometry(faceWidth, faceHeight, 20, 20);
+    const pos = faceGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
 
-    const rightCheek = new THREE.Mesh(leftCheekGeo, furMat);
-    rightCheek.position.set(-0.14, -0.06, 0.12);
-    rightCheek.castShadow = true;
-    head.add(rightCheek);
+      // Natural feline facial curvature:
+      // Cheeks curve back towards the sides
+      const cheekCurvature = -Math.pow(x / (faceWidth * 0.5), 2) * 0.09;
 
-    // Snout / Muzzle (soft cream-white)
-    const snoutGeo = new THREE.SphereGeometry(0.09, 16, 16);
-    snoutGeo.scale(1.1, 0.75, 1.0);
-    const snoutMat = new THREE.MeshStandardMaterial({
-      color: 0xfff3e0,
-      roughness: 0.85,
-    });
-    const snoutMesh = new THREE.Mesh(snoutGeo, snoutMat);
-    snoutMesh.position.set(0, -0.07, 0.18);
-    head.add(snoutMesh);
+      // Snout and nose area protrudes slightly forward
+      const snoutDist = Math.hypot(x, y + 0.05);
+      const snoutProtrusion = Math.max(0, 0.14 - snoutDist) * 0.18;
 
-    // Cute tiny pink kitten nose
-    const noseGeo = new THREE.ConeGeometry(0.024, 0.024, 8);
-    const noseMat = new THREE.MeshStandardMaterial({
-      color: 0xfca3b7,
-      roughness: 0.4,
-    });
-    const noseMesh = new THREE.Mesh(noseGeo, noseMat);
-    noseMesh.rotation.x = Math.PI;
-    noseMesh.position.set(0, -0.045, 0.265);
-    head.add(noseMesh);
+      // Top forehead and bottom chin roll back
+      const verticalRoll = -Math.pow(y / (faceHeight * 0.5), 2) * 0.04;
 
-    // Large expressive sapphire blue feline eyes
-    const eyeGeo = new THREE.SphereGeometry(0.072, 16, 16);
-    eyeGeo.scale(1.0, 1.0, 0.6);
+      pos.setZ(i, cheekCurvature + snoutProtrusion + verticalRoll);
+    }
+    faceGeo.computeVertexNormals();
 
+    const faceShell = new THREE.Mesh(faceGeo, faceMat);
+    faceShell.position.set(0, 0.015, 0.17);
+    faceShell.castShadow = true;
+    faceShell.receiveShadow = true;
+    head.add(faceShell);
+
+    // Secondary eye markers in rig for animations/blinks
+    const eyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    const eyeMat = AnukiMaterials.createEyeMaterial();
     const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-    leftEye.position.set(0.105, 0.015, 0.19);
-    leftEye.rotation.y = 0.22;
-    leftEye.rotation.x = -0.05;
+    leftEye.position.set(0.10, 0.015, 0.16);
+    leftEye.visible = false; // Hidden behind photorealistic eye
     head.add(leftEye);
 
     const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-    rightEye.position.set(-0.105, 0.015, 0.19);
-    rightEye.rotation.y = -0.22;
-    rightEye.rotation.x = -0.05;
+    rightEye.position.set(-0.10, 0.015, 0.16);
+    rightEye.visible = false;
     head.add(rightEye);
 
-    // Triangular kitten ears
+    // 3D Kitten Ears (Aligned with the photo ears)
     const leftEar = new THREE.Group();
     leftEar.name = 'Rig_LeftEar';
-    leftEar.position.set(0.14, 0.18, 0.02);
+    leftEar.position.set(0.15, 0.17, 0.0);
     leftEar.rotation.set(-0.1, 0.2, -0.28);
     head.add(leftEar);
 
@@ -236,20 +242,9 @@ export class AnukiModel {
     leftEarOuter.castShadow = true;
     leftEar.add(leftEarOuter);
 
-    // Soft pink inner ear fluff
-    const innerEarGeo = new THREE.ConeGeometry(0.06, 0.13, 4);
-    innerEarGeo.scale(0.85, 0.85, 0.25);
-    const innerEarMat = new THREE.MeshStandardMaterial({
-      color: 0xf8bbd0,
-      roughness: 0.9,
-    });
-    const leftInnerEar = new THREE.Mesh(innerEarGeo, innerEarMat);
-    leftInnerEar.position.z = 0.015;
-    leftEar.add(leftInnerEar);
-
     const rightEar = new THREE.Group();
     rightEar.name = 'Rig_RightEar';
-    rightEar.position.set(-0.14, 0.18, 0.02);
+    rightEar.position.set(-0.15, 0.17, 0.0);
     rightEar.rotation.set(-0.1, -0.2, 0.28);
     head.add(rightEar);
 
@@ -257,15 +252,11 @@ export class AnukiModel {
     rightEarOuter.castShadow = true;
     rightEar.add(rightEarOuter);
 
-    const rightInnerEar = new THREE.Mesh(innerEarGeo, innerEarMat);
-    rightInnerEar.position.z = 0.015;
-    rightEar.add(rightInnerEar);
-
-    // SIGNATURE PINK BOW ON LEFT EAR (per PRD & Reference Image)
+    // SIGNATURE 3D PINK BOW ON LEFT EAR (matching reference photo)
     const bow = new THREE.Group();
     bow.name = 'Rig_EarBow';
-    bow.position.set(0.12, 0.19, 0.08); // Attached at base of left ear
-    bow.rotation.set(0.15, 0.3, -0.2);
+    bow.position.set(0.12, 0.185, 0.14); // Positioned on left ear matching reference image
+    bow.rotation.set(0.15, 0.28, -0.22);
     head.add(bow);
 
     // Bow central knot
@@ -302,20 +293,18 @@ export class AnukiModel {
     bow.add(ribbonTail2);
 
     // 4. Arms & Miniature Gauntlets
-    // Left Arm (Shield / Free Paw)
     const leftShoulder = new THREE.Group();
     leftShoulder.name = 'Rig_LeftShoulder';
     leftShoulder.position.set(0.20, 0.06, 0.0);
     chest.add(leftShoulder);
 
-    // Left Pauldron (curved shoulder armor plate)
+    // Left Pauldron
     const pauldronGeo = new THREE.SphereGeometry(0.08, 12, 12, 0, Math.PI * 2, 0, Math.PI * 0.55);
-    const leftPauldron = new THREE.Mesh(pauldronGeo, armorMat);
+    const leftPauldron = new THREE.Mesh(pauldronGeo, cuirassMat);
     leftPauldron.rotation.z = -0.3;
     leftPauldron.castShadow = true;
     leftShoulder.add(leftPauldron);
 
-    // Gold rim on pauldron
     const pauldronRimGeo = new THREE.TorusGeometry(0.08, 0.01, 8, 16);
     const leftRim = new THREE.Mesh(pauldronRimGeo, goldMat);
     leftRim.rotation.x = Math.PI / 2;
@@ -328,7 +317,7 @@ export class AnukiModel {
     leftShoulder.add(leftArm);
 
     const armUpperGeo = new THREE.CylinderGeometry(0.05, 0.045, 0.12, 12);
-    const leftArmUpper = new THREE.Mesh(armUpperGeo, armorMat);
+    const leftArmUpper = new THREE.Mesh(armUpperGeo, cuirassMat);
     leftArmUpper.position.y = -0.06;
     leftArmUpper.castShadow = true;
     leftArm.add(leftArmUpper);
@@ -338,9 +327,8 @@ export class AnukiModel {
     leftForearm.position.y = -0.12;
     leftArm.add(leftForearm);
 
-    // Miniature silver gauntlet
     const gauntletGeo = new THREE.CylinderGeometry(0.052, 0.042, 0.12, 12);
-    const leftGauntlet = new THREE.Mesh(gauntletGeo, armorMat);
+    const leftGauntlet = new THREE.Mesh(gauntletGeo, cuirassMat);
     leftGauntlet.position.y = -0.06;
     leftGauntlet.castShadow = true;
     leftForearm.add(leftGauntlet);
@@ -362,7 +350,7 @@ export class AnukiModel {
     rightShoulder.position.set(-0.20, 0.06, 0.0);
     chest.add(rightShoulder);
 
-    const rightPauldron = new THREE.Mesh(pauldronGeo, armorMat);
+    const rightPauldron = new THREE.Mesh(pauldronGeo, cuirassMat);
     rightPauldron.rotation.z = 0.3;
     rightPauldron.castShadow = true;
     rightShoulder.add(rightPauldron);
@@ -377,7 +365,7 @@ export class AnukiModel {
     rightArm.position.y = -0.04;
     rightShoulder.add(rightArm);
 
-    const rightArmUpper = new THREE.Mesh(armUpperGeo, armorMat);
+    const rightArmUpper = new THREE.Mesh(armUpperGeo, cuirassMat);
     rightArmUpper.position.y = -0.06;
     rightArmUpper.castShadow = true;
     rightArm.add(rightArmUpper);
@@ -387,7 +375,7 @@ export class AnukiModel {
     rightForearm.position.y = -0.12;
     rightArm.add(rightForearm);
 
-    const rightGauntlet = new THREE.Mesh(gauntletGeo, armorMat);
+    const rightGauntlet = new THREE.Mesh(gauntletGeo, cuirassMat);
     rightGauntlet.position.y = -0.06;
     rightGauntlet.castShadow = true;
     rightForearm.add(rightGauntlet);
@@ -406,7 +394,7 @@ export class AnukiModel {
     weaponHand.position.set(0, 0, 0.04);
     rightPaw.add(weaponHand);
 
-    // 5. Weapon: MOONFANG (Hero Sword)
+    // 5. Weapon: MOONFANG
     const swordMesh = this.buildMoonfangSword(steelMat, goldMat, leatherMat, gemMat);
     weaponHand.add(swordMesh);
 
@@ -424,25 +412,18 @@ export class AnukiModel {
     hips.add(leftThigh);
 
     const thighGeo = new THREE.CylinderGeometry(0.065, 0.055, 0.16, 12);
-    const leftThighMesh = new THREE.Mesh(thighGeo, armorMat);
+    const leftThighMesh = new THREE.Mesh(thighGeo, greavesMat);
     leftThighMesh.position.y = -0.08;
     leftThighMesh.castShadow = true;
     leftThigh.add(leftThighMesh);
-
-    // Knee Poleyn
-    const poleynGeo = new THREE.SphereGeometry(0.04, 10, 10);
-    const leftPoleyn = new THREE.Mesh(poleynGeo, goldMat);
-    leftPoleyn.position.set(0, -0.16, 0.05);
-    leftThigh.add(leftPoleyn);
 
     const leftCalf = new THREE.Group();
     leftCalf.name = 'Rig_LeftCalf';
     leftCalf.position.y = -0.16;
     leftThigh.add(leftCalf);
 
-    // Silver greave
     const greaveGeo = new THREE.CylinderGeometry(0.055, 0.045, 0.14, 12);
-    const leftGreave = new THREE.Mesh(greaveGeo, armorMat);
+    const leftGreave = new THREE.Mesh(greaveGeo, greavesMat);
     leftGreave.position.y = -0.07;
     leftGreave.castShadow = true;
     leftCalf.add(leftGreave);
@@ -452,7 +433,6 @@ export class AnukiModel {
     leftFoot.position.y = -0.14;
     leftCalf.add(leftFoot);
 
-    // Cute hind paw with silver sabaton plate
     const hindPawGeo = new THREE.BoxGeometry(0.08, 0.045, 0.12);
     const leftFootMesh = new THREE.Mesh(hindPawGeo, furMat);
     leftFootMesh.position.set(0, -0.02, 0.03);
@@ -460,7 +440,7 @@ export class AnukiModel {
     leftFoot.add(leftFootMesh);
 
     const sabatonGeo = new THREE.CylinderGeometry(0.045, 0.05, 0.08, 8, 1, false, 0, Math.PI);
-    const leftSabaton = new THREE.Mesh(sabatonGeo, armorMat);
+    const leftSabaton = new THREE.Mesh(sabatonGeo, greavesMat);
     leftSabaton.rotation.x = -Math.PI / 2;
     leftSabaton.position.set(0, 0.0, 0.03);
     leftFoot.add(leftSabaton);
@@ -471,21 +451,17 @@ export class AnukiModel {
     rightThigh.position.set(-0.12, -0.08, 0.0);
     hips.add(rightThigh);
 
-    const rightThighMesh = new THREE.Mesh(thighGeo, armorMat);
+    const rightThighMesh = new THREE.Mesh(thighGeo, greavesMat);
     rightThighMesh.position.y = -0.08;
     rightThighMesh.castShadow = true;
     rightThigh.add(rightThighMesh);
-
-    const rightPoleyn = new THREE.Mesh(poleynGeo, goldMat);
-    rightPoleyn.position.set(0, -0.16, 0.05);
-    rightThigh.add(rightPoleyn);
 
     const rightCalf = new THREE.Group();
     rightCalf.name = 'Rig_RightCalf';
     rightCalf.position.y = -0.16;
     rightThigh.add(rightCalf);
 
-    const rightGreave = new THREE.Mesh(greaveGeo, armorMat);
+    const rightGreave = new THREE.Mesh(greaveGeo, greavesMat);
     rightGreave.position.y = -0.07;
     rightGreave.castShadow = true;
     rightCalf.add(rightGreave);
@@ -500,7 +476,7 @@ export class AnukiModel {
     rightFootMesh.castShadow = true;
     rightFoot.add(rightFootMesh);
 
-    const rightSabaton = new THREE.Mesh(sabatonGeo, armorMat);
+    const rightSabaton = new THREE.Mesh(sabatonGeo, greavesMat);
     rightSabaton.rotation.x = -Math.PI / 2;
     rightSabaton.position.set(0, 0.0, 0.03);
     rightFoot.add(rightSabaton);
@@ -515,19 +491,18 @@ export class AnukiModel {
       seg.name = `Rig_Tail_${t}`;
       if (t === 0) {
         seg.position.set(0, -0.05, -0.14);
-        seg.rotation.x = -0.6; // Arched outward
+        seg.rotation.x = -0.6;
       } else {
         seg.position.set(0, 0, -0.08);
       }
       prevTailParent.add(seg);
       tailSegments.push(seg);
 
-      // Tail segment mesh
       const radius = 0.045 - t * 0.005;
       const tailGeo = new THREE.SphereGeometry(radius, 10, 10);
       tailGeo.scale(1.0, 1.0, 1.5);
       const tailMat = t === numTailSegments - 1
-        ? new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 }) // Cute white tip
+        ? new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 })
         : furMat;
       const tailMesh = new THREE.Mesh(tailGeo, tailMat);
       tailMesh.castShadow = true;
@@ -536,7 +511,7 @@ export class AnukiModel {
       prevTailParent = seg;
     }
 
-    // 8. Flowing Ivory Cape (Multi-Bone Chain & Dynamic Cloth Mesh)
+    // 8. Flowing Ivory Cape
     const { capeMesh, capeBones } = this.buildIvoryCape(chest, capeMat, goldMat);
 
     // Store complete Rig reference
@@ -547,6 +522,7 @@ export class AnukiModel {
       chest,
       neck,
       head,
+      faceShell,
       leftEar,
       rightEar,
       bow,
@@ -575,9 +551,6 @@ export class AnukiModel {
     };
   }
 
-  /**
-   * Constructs Moonfang - Lady Anuki's Ornate Straight Knight Sword
-   */
   private buildMoonfangSword(
     steelMat: THREE.Material,
     goldMat: THREE.Material,
@@ -587,7 +560,6 @@ export class AnukiModel {
     const sword = new THREE.Group();
     sword.name = 'Weapon_Moonfang';
 
-    // 1. Blade: double-edged straight blade with fuller
     const bladeLength = 0.62;
     const bladeWidth = 0.055;
     const bladeThickness = 0.012;
@@ -598,7 +570,6 @@ export class AnukiModel {
     blade.castShadow = true;
     sword.add(blade);
 
-    // Tapered blade tip
     const tipGeo = new THREE.ConeGeometry(bladeWidth / 2, 0.12, 4);
     tipGeo.scale(1.0, 1.0, bladeThickness / bladeWidth);
     const tip = new THREE.Mesh(tipGeo, steelMat);
@@ -607,21 +578,18 @@ export class AnukiModel {
     tip.castShadow = true;
     sword.add(tip);
 
-    // Center fuller groove
     const fullerGeo = new THREE.BoxGeometry(0.012, bladeLength * 0.75, bladeThickness * 1.2);
     const fullerMat = new THREE.MeshStandardMaterial({ color: 0x90a4ae, metalness: 0.9, roughness: 0.3 });
     const fuller = new THREE.Mesh(fullerGeo, fullerMat);
     fuller.position.y = bladeLength / 2 + 0.02;
     sword.add(fuller);
 
-    // 2. Ornate Crossguard (winged cruciform with gold filigree)
     const guardGeo = new THREE.BoxGeometry(0.20, 0.03, 0.035);
     const guard = new THREE.Mesh(guardGeo, goldMat);
     guard.position.y = 0.04;
     guard.castShadow = true;
     sword.add(guard);
 
-    // Winged tips
     const wingGeo = new THREE.ConeGeometry(0.02, 0.05, 6);
     const leftWing = new THREE.Mesh(wingGeo, goldMat);
     leftWing.position.set(0.10, 0.05, 0);
@@ -631,35 +599,28 @@ export class AnukiModel {
     rightWing.position.set(-0.10, 0.05, 0);
     sword.add(rightWing);
 
-    // Center ruby jewel
     const gemGeo = new THREE.OctahedronGeometry(0.018);
     const gem = new THREE.Mesh(gemGeo, gemMat);
     gem.position.set(0, 0.04, 0.02);
     sword.add(gem);
 
-    // 3. Leather-wrapped hilt / grip
     const hiltGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.12, 12);
     const hilt = new THREE.Mesh(hiltGeo, leatherMat);
     hilt.position.y = -0.02;
     sword.add(hilt);
 
-    // 4. Round gold pommel
     const pommelGeo = new THREE.SphereGeometry(0.028, 12, 12);
     const pommel = new THREE.Mesh(pommelGeo, goldMat);
     pommel.position.y = -0.09;
     pommel.castShadow = true;
     sword.add(pommel);
 
-    // Orient sword comfortably in paw
     sword.position.set(0, 0, 0.02);
     sword.rotation.set(Math.PI / 2, 0, 0);
 
     return sword;
   }
 
-  /**
-   * Constructs leather hip scabbard with gold chape
-   */
   private buildScabbard(leatherMat: THREE.Material, goldMat: THREE.Material): THREE.Group {
     const scabbard = new THREE.Group();
     scabbard.name = 'Scabbard_Moonfang';
@@ -670,13 +631,11 @@ export class AnukiModel {
     sheath.castShadow = true;
     scabbard.add(sheath);
 
-    // Gold locket (throat of scabbard)
     const locketGeo = new THREE.BoxGeometry(0.07, 0.04, 0.035);
     const locket = new THREE.Mesh(locketGeo, goldMat);
     locket.position.y = 0.0;
     scabbard.add(locket);
 
-    // Gold chape (protective bottom tip)
     const chapeGeo = new THREE.ConeGeometry(0.035, 0.08, 4);
     chapeGeo.scale(1.0, 1.0, 0.5);
     const chape = new THREE.Mesh(chapeGeo, goldMat);
@@ -687,15 +646,11 @@ export class AnukiModel {
     return scabbard;
   }
 
-  /**
-   * Constructs flowing ivory cape with multi-bone chain
-   */
   private buildIvoryCape(
     chestParent: THREE.Group,
     capeMat: THREE.Material,
     goldMat: THREE.Material
   ): { capeMesh: THREE.Mesh; capeBones: THREE.Group[] } {
-    // Twin gold lion clasps on shoulders
     const claspGeo = new THREE.CylinderGeometry(0.028, 0.028, 0.015, 12);
     const leftClasp = new THREE.Mesh(claspGeo, goldMat);
     leftClasp.rotation.x = Math.PI / 2;
@@ -707,7 +662,6 @@ export class AnukiModel {
     rightClasp.position.set(-0.13, 0.14, 0.06);
     chestParent.add(rightClasp);
 
-    // Multi-segment cape bone hierarchy
     const capeBones: THREE.Group[] = [];
     let prevBone: THREE.Group = chestParent;
     const numCapeBones = 4;
@@ -725,21 +679,18 @@ export class AnukiModel {
       prevBone = bone;
     }
 
-    // High-resolution curved cape cloth geometry
     const widthTop = 0.36;
     const widthBottom = 0.56;
     const height = 0.64;
 
     const capeGeo = new THREE.PlaneGeometry(widthBottom, height, 16, 24);
-    // Taper top width
     const pos = capeGeo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const y = pos.getY(i);
-      const normalizedY = (y + height / 2) / height; // 0 at bottom, 1 at top
+      const normalizedY = (y + height / 2) / height;
       const widthFactor = (1 - normalizedY) * (widthBottom / widthBottom) + normalizedY * (widthTop / widthBottom);
       pos.setX(i, pos.getX(i) * widthFactor);
 
-      // Natural cloth curvature wrapping around back
       const x = pos.getX(i);
       pos.setZ(i, -Math.cos((x / (widthBottom / 2)) * (Math.PI / 2.4)) * 0.05);
     }

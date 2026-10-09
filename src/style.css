@@ -231,6 +231,76 @@ html, body {
   color: var(--color-gold-light);
 }
 
+/* Camera Vantage Controls Deck */
+.camera-controls-deck {
+  position: absolute;
+  top: 5.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  backdrop-filter: blur(12px);
+  padding: 0.5rem 0.9rem;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+}
+
+.deck-title {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-gold-primary);
+  text-transform: uppercase;
+}
+
+.preset-btn-group {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.preset-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--color-text-dim);
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  font-weight: 500;
+  padding: 0.35rem 0.8rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preset-btn:hover {
+  background: rgba(229, 184, 94, 0.2);
+  border-color: var(--color-gold-primary);
+  color: #fff;
+}
+
+.preset-btn.active {
+  background: linear-gradient(135deg, rgba(229, 184, 94, 0.4), rgba(145, 111, 43, 0.4));
+  border-color: var(--color-gold-light);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(229, 184, 94, 0.3);
+}
+
+.preset-btn.toggle {
+  border-color: rgba(255, 119, 34, 0.4);
+  color: #ffaa66;
+}
+
+.preset-btn.toggle.active {
+  background: linear-gradient(135deg, rgba(255, 119, 34, 0.4), rgba(217, 56, 58, 0.4));
+  border-color: #ff7722;
+  color: #fff;
+}
+
 /* Control Deck */
 .control-deck {
   position: absolute;

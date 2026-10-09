@@ -14,7 +14,9 @@ export class CameraManager {
   private basePosition: THREE.Vector3 = new THREE.Vector3();
   private targetLookAt: THREE.Vector3 = new THREE.Vector3(0, 1, 0);
 
-  constructor(aspect: number = window.innerWidth / window.innerHeight) {
+  constructor(
+    aspect: number = typeof window !== 'undefined' ? window.innerWidth / window.innerHeight : 16 / 9
+  ) {
     this.camera = new THREE.PerspectiveCamera(
       GameConfig.GRAPHICS.FOV,
       aspect,

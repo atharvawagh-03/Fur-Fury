@@ -11,6 +11,7 @@ import { AudioManager } from '../audio/AudioManager';
 import { UIManager } from '../ui/UIManager';
 import { Engine } from './Engine';
 import { BootScene } from '../scenes/BootScene';
+import { ArenaScene } from '../scenes/ArenaScene';
 
 export class Game {
   private engine!: Engine;
@@ -50,12 +51,14 @@ export class Game {
     this.uiManager = new UIManager(uiOverlay, this.audioManager);
     this.uiManager.setTimeReference(this.engine.getTime());
 
-    // Register initial scenes
+    // Register scenes
     const bootScene = new BootScene();
+    const arenaScene = new ArenaScene();
     this.sceneManager.registerScene(bootScene);
+    this.sceneManager.registerScene(arenaScene);
 
-    // Switch to initial scene and start loop
-    await this.sceneManager.switchScene(bootScene.id);
+    // Switch to Grand Arena primary environment
+    await this.sceneManager.switchScene(arenaScene.id);
     this.engine.start();
 
     // UI update loop

@@ -1,7 +1,8 @@
 /**
- * UI Manager - Step 3: Anuki Character & Third-Person Controller
- * Renders hero status HUD (Health & Stamina bars), lock-on reticle, telemetry,
- * camera controls, and combat action decks conforming to PRD Section 15.
+ * UI Manager - Step 4: Rhazakar Dragon & Opening Cinematic
+ * Renders hero status HUD, lock-on reticle, telemetry, camera decks,
+ * cinematic letterbox bars, narrative subtitles, and cinematic skip/replay controls
+ * conforming to PRD Section 7, 10, & 15.
  */
 
 import { GameConfig } from '../config/GameConfig';
@@ -10,6 +11,14 @@ import { Time } from '../core/Time';
 import { AudioManager } from '../audio/AudioManager';
 import { PlayerStats } from '../character/AnukiController';
 import { ActiveCameraMode } from '../scenes/ArenaScene';
+import { CinematicBeat } from '../cinematic/OpeningCinematic';
+
+export interface CinematicStatePayload {
+  active: boolean;
+  beat: CinematicBeat;
+  subtitle: { speaker?: string; text: string } | null;
+  showPrompt: string | null;
+}
 
 export class UIManager {
   private overlayContainer: HTMLElement;
@@ -28,6 +37,14 @@ export class UIManager {
   private lockOnBtn: HTMLElement | null = null;
   private heroCamBtn: HTMLElement | null = null;
 
+  // Cinematic UI elements
+  private cinematicContainer: HTMLElement | null = null;
+  private cinematicSpeaker: HTMLElement | null = null;
+  private cinematicText: HTMLElement | null = null;
+  private cinematicPrompt: HTMLElement | null = null;
+  private skipCinematicBtn: HTMLElement | null = null;
+  private playCinematicBtn: HTMLElement | null = null;
+
   constructor(container: HTMLElement, audioManager: AudioManager) {
     this.overlayContainer = container;
     this.audioManager = audioManager;
@@ -41,7 +58,35 @@ export class UIManager {
 
   private createHud(): void {
     this.overlayContainer.innerHTML = `
-      <div class="game-hud">
+      <div class="game-hud" id="main-hud">
+        <!-- Cinematic Letterbox Top & Bottom Bars -->
+        <div class="cinematic-bar bar-top" id="cinema-bar-top"></div>
+        <div class="cinematic-bar bar-bottom" id="cinema-bar-bottom"></div>
+
+        <!-- Cinematic Subtitles & Interaction Deck -->
+        <div class="cinematic-overlay" id="cinematic-overlay">
+          <div class="cinematic-skip-container">
+            <button class="btn-skip-cinematic" id="btn-skip-cinematic">
+              <span>Skip Cinematic</span>
+              <kbd class="kbd-hint">ESC / ENTER</kbd>
+            </button>
+          </div>
+
+          <div class="cinematic-prompt-badge" id="cinematic-prompt">
+            Use [Mouse] to look around while mounted
+          </div>
+
+          <div class="cinematic-dialogue-box" id="cinematic-dialogue-box">
+            <div class="dialogue-speaker-banner">
+              <span class="speaker-crest">🐉</span>
+              <span class="speaker-name" id="cinematic-speaker">Rhazakar</span>
+            </div>
+            <p class="dialogue-text" id="cinematic-text">
+              “Hold tight, little flame! The arena awaits.”
+            </p>
+          </div>
+        </div>
+
         <!-- Top Header & Lore Badge -->
         <header class="hud-header">
           <div class="brand-container">
@@ -60,8 +105,8 @@ export class UIManager {
 
         <!-- Milestone Badge -->
         <div class="milestone-badge">
-          <span class="pill">STEP 3 ACTIVE</span>
-          <span class="milestone-desc">Anuki Character & Third-Person Kinematic Controller</span>
+          <span class="pill">STEP 4 ACTIVE</span>
+          <span class="milestone-desc">Rhazakar Dragon & Opening Cinematic</span>
         </div>
 
         <!-- Lady Anuki Health & Stamina Combat Status Card -->
@@ -101,8 +146,8 @@ export class UIManager {
             <span class="value" id="fps-counter">60 FPS</span>
           </div>
           <div class="telemetry-item">
-            <span class="label">PHYSICS CONTROLLER</span>
-            <span class="value highlight">Rapier 3D Kinematic Capsule</span>
+            <span class="label">DRAGON COMPANION</span>
+            <span class="value highlight">Rhazakar (Colossal Scarlet Dragon)</span>
           </div>
           <div class="telemetry-item">
             <span class="label">MODEL RIG</span>
@@ -114,11 +159,12 @@ export class UIManager {
           </div>
         </div>
 
-        <!-- Camera Control Deck -->
+        <!-- Camera & Cinematic Deck -->
         <div class="camera-controls-deck">
-          <span class="deck-title">CAMERA SYSTEMS</span>
+          <span class="deck-title">CAMERA & CINEMATIC</span>
           <div class="preset-btn-group">
-            <button class="preset-btn active" id="btn-hero-cam">Hero Follow (Third-Person)</button>
+            <button class="preset-btn highlight-btn" id="btn-play-cinematic">🎬 Replay Opening Cinematic</button>
+            <button class="preset-btn active" id="btn-hero-cam">Hero Follow</button>
             <button class="preset-btn toggle" id="btn-lock-on">Lock-On (R): OFF</button>
             <button class="preset-btn" data-preset="OVERVIEW">Arena High</button>
             <button class="preset-btn" data-preset="GATE">North Gate</button>
@@ -154,14 +200,14 @@ export class UIManager {
         <!-- Combat & Keybinding Hints per PRD -->
         <footer class="hud-footer">
           <div class="controls-legend">
-            <span class="legend-chip"><kbd>WASD</kbd> Move</span>
+            <span class="legend-chip"><kbd>WASD</kbd> Move / Dragon Bank</span>
             <span class="legend-chip"><kbd>SHIFT</kbd> Sprint / Guard</span>
             <span class="legend-chip"><kbd>SPACE</kbd> Evasive Dodge Roll</span>
-            <span class="legend-chip"><kbd>J / Mouse L</kbd> Light Attack</span>
-            <span class="legend-chip"><kbd>K / Mouse R</kbd> Heavy Attack</span>
+            <span class="legend-chip"><kbd>J</kbd> Light Attack</span>
+            <span class="legend-chip"><kbd>K</kbd> Heavy Strike</span>
             <span class="legend-chip"><kbd>Q / F</kbd> Parry</span>
             <span class="legend-chip"><kbd>R</kbd> Duel Lock-On</span>
-            <span class="legend-chip"><kbd>Mouse Drag</kbd> Orbit Camera</span>
+            <span class="legend-chip"><kbd>ESC</kbd> Skip Cinematic</span>
           </div>
         </footer>
       </div>
@@ -177,10 +223,33 @@ export class UIManager {
     this.lockOnBtn = document.getElementById('btn-lock-on');
     this.heroCamBtn = document.getElementById('btn-hero-cam');
 
+    this.cinematicContainer = document.getElementById('cinematic-overlay');
+    this.cinematicSpeaker = document.getElementById('cinematic-speaker');
+    this.cinematicText = document.getElementById('cinematic-text');
+    this.cinematicPrompt = document.getElementById('cinematic-prompt');
+    this.skipCinematicBtn = document.getElementById('btn-skip-cinematic');
+    this.playCinematicBtn = document.getElementById('btn-play-cinematic');
+
     this.attachDomListeners();
   }
 
   private attachDomListeners(): void {
+    // Play Opening Cinematic
+    if (this.playCinematicBtn) {
+      this.playCinematicBtn.addEventListener('click', () => {
+        this.audioManager.unlock();
+        this.eventBus.emit('PLAY_OPENING_CINEMATIC');
+      });
+    }
+
+    // Skip Cinematic
+    if (this.skipCinematicBtn) {
+      this.skipCinematicBtn.addEventListener('click', () => {
+        this.audioManager.unlock();
+        this.eventBus.emit('SKIP_OPENING_CINEMATIC');
+      });
+    }
+
     // Hero Cam Switch
     if (this.heroCamBtn) {
       this.heroCamBtn.addEventListener('click', () => {
@@ -222,7 +291,6 @@ export class UIManager {
     if (btnDodge) {
       btnDodge.addEventListener('click', () => {
         this.audioManager.unlock();
-        // Dispatch dodge via synthetic keydown or direct trigger
         window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
         setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' })), 100);
       });
@@ -269,6 +337,38 @@ export class UIManager {
   }
 
   private subscribeEvents(): void {
+    // Cinematic State Updates
+    this.eventBus.on<CinematicStatePayload>('CINEMATIC_STATE', (payload) => {
+      const mainHud = document.getElementById('main-hud');
+      if (mainHud) {
+        if (payload.active) {
+          mainHud.classList.add('cinematic-active');
+        } else {
+          mainHud.classList.remove('cinematic-active');
+        }
+      }
+
+      if (this.cinematicContainer) {
+        this.cinematicContainer.style.display = payload.active ? 'flex' : 'none';
+      }
+
+      if (payload.subtitle && this.cinematicText) {
+        this.cinematicText.textContent = payload.subtitle.text;
+        if (this.cinematicSpeaker) {
+          this.cinematicSpeaker.textContent = payload.subtitle.speaker || 'Narrator';
+        }
+      }
+
+      if (this.cinematicPrompt) {
+        if (payload.showPrompt) {
+          this.cinematicPrompt.style.display = 'block';
+          this.cinematicPrompt.textContent = payload.showPrompt;
+        } else {
+          this.cinematicPrompt.style.display = 'none';
+        }
+      }
+    });
+
     // Player Stats Updates
     this.eventBus.on<PlayerStats>('PLAYER_STATS_UPDATED', (stats) => {
       if (this.hpBarFill) {
@@ -320,7 +420,7 @@ export class UIManager {
     this.eventBus.on<ActiveCameraMode>('CAMERA_MODE_CHANGED', (mode) => {
       const camReadout = document.getElementById('active-cam-readout');
       if (camReadout) {
-        camReadout.textContent = mode === 'THIRD_PERSON' ? 'Third-Person Follow' : 'Cinematic Vantage';
+        camReadout.textContent = mode === 'THIRD_PERSON' ? 'Third-Person Follow' : 'Cinematic Framing';
       }
 
       if (this.heroCamBtn) {

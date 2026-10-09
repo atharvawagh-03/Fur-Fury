@@ -238,6 +238,160 @@ export class AudioManager {
     osc.stop(t + 0.3);
   }
 
+  /**
+   * Resonant low-frequency dragon wing flap displacement whoosh
+   */
+  public playDragonWingFlap(): void {
+    if (!this.ctx || !this.sfxGain) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(110, t);
+    osc.frequency.exponentialRampToValueAtTime(32, t + 0.45);
+
+    gain.gain.setValueAtTime(0.28, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(t);
+    osc.stop(t + 0.45);
+  }
+
+  /**
+   * Colossal multi-layered dragon roar (guttural growl + brass resonance + screech)
+   */
+  public playDragonRoar(): void {
+    if (!this.ctx || !this.sfxGain) return;
+    const t = this.ctx.currentTime;
+
+    // 1. Low sub growl
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sawtooth';
+    subOsc.frequency.setValueAtTime(85, t);
+    subOsc.frequency.linearRampToValueAtTime(120, t + 0.4);
+    subOsc.frequency.exponentialRampToValueAtTime(45, t + 1.8);
+    subGain.gain.setValueAtTime(0.35, t);
+    subGain.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
+    subOsc.connect(subGain);
+    subGain.connect(this.sfxGain);
+    subOsc.start(t);
+    subOsc.stop(t + 1.8);
+
+    // 2. Brass draconic roar resonance
+    const midOsc = this.ctx.createOscillator();
+    const midGain = this.ctx.createGain();
+    midOsc.type = 'triangle';
+    midOsc.frequency.setValueAtTime(220, t);
+    midOsc.frequency.linearRampToValueAtTime(340, t + 0.5);
+    midOsc.frequency.exponentialRampToValueAtTime(110, t + 1.6);
+    midGain.gain.setValueAtTime(0.28, t);
+    midGain.gain.exponentialRampToValueAtTime(0.001, t + 1.6);
+    midOsc.connect(midGain);
+    midGain.connect(this.sfxGain);
+    midOsc.start(t);
+    midOsc.stop(t + 1.6);
+
+    // 3. High harmonic screech
+    const highOsc = this.ctx.createOscillator();
+    const highGain = this.ctx.createGain();
+    highOsc.type = 'sine';
+    highOsc.frequency.setValueAtTime(650, t + 0.1);
+    highOsc.frequency.exponentialRampToValueAtTime(320, t + 1.2);
+    highGain.gain.setValueAtTime(0.18, t + 0.1);
+    highGain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+    highOsc.connect(highGain);
+    highGain.connect(this.sfxGain);
+    highOsc.start(t + 0.1);
+    highOsc.stop(t + 1.2);
+  }
+
+  /**
+   * Earth-shattering touchdown landing impact (sub-bass drop + heavy crunch)
+   */
+  public playDragonImpact(): void {
+    if (!this.ctx || !this.sfxGain) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.exponentialRampToValueAtTime(25, t + 0.6);
+
+    gain.gain.setValueAtTime(0.45, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(t);
+    osc.stop(t + 0.6);
+  }
+
+  /**
+   * Muffled tense cinematic heartbeat
+   */
+  public playHeartbeat(): void {
+    if (!this.ctx || !this.sfxGain) return;
+    const t = this.ctx.currentTime;
+
+    // Lub
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(65, t);
+    osc1.frequency.exponentialRampToValueAtTime(35, t + 0.12);
+    gain1.gain.setValueAtTime(0.25, t);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc1.connect(gain1);
+    gain1.connect(this.sfxGain);
+    osc1.start(t);
+    osc1.stop(t + 0.12);
+
+    // Dub
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(55, t + 0.18);
+    osc2.frequency.exponentialRampToValueAtTime(30, t + 0.32);
+    gain2.gain.setValueAtTime(0.2, t + 0.18);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+    osc2.connect(gain2);
+    gain2.connect(this.sfxGain);
+    osc2.start(t + 0.18);
+    osc2.stop(t + 0.32);
+  }
+
+  /**
+   * Majestic heroic fanfare stinger for Anuki's arrival
+   */
+  public playCinematicFanfare(): void {
+    if (!this.ctx || !this.musicGain) return;
+    const t = this.ctx.currentTime;
+    const notes = [261.63, 329.63, 392.0, 523.25]; // C4, E4, G4, C5 major chord
+
+    notes.forEach((freq, idx) => {
+      if (!this.ctx || !this.musicGain) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.15);
+
+      gain.gain.setValueAtTime(0.08, t + idx * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.15 + 1.5);
+
+      osc.connect(gain);
+      gain.connect(this.musicGain);
+      osc.start(t + idx * 0.15);
+      osc.stop(t + idx * 0.15 + 1.5);
+    });
+  }
+
   public setMasterVolume(val: number): void {
     if (this.masterGain) this.masterGain.gain.value = Math.max(0, Math.min(1, val));
   }

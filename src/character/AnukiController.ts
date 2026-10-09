@@ -128,6 +128,17 @@ export class AnukiController {
     return this.model.getRoot().position;
   }
 
+  public teleport(x: number, y: number, z: number): void {
+    this.model.getRoot().position.set(x, y, z);
+    if (this.body) {
+      this.body.setTranslation({ x, y: y + 0.4, z }, true);
+      this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    }
+    this.currentSpeed = 0;
+    this.verticalVelocity = 0;
+    this.movementVector.set(0, 0, 0);
+  }
+
   public getStats(): PlayerStats {
     return {
       health: this.health,

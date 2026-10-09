@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { GameConfig } from '../config/GameConfig';
 
 export class CameraManager {
-  private camera: THREE.PerspectiveCamera;
+  public camera: THREE.PerspectiveCamera;
   private shakeIntensity: number = 0;
   private shakeDecay: number = 5.0; // Decay rate per second
   private shakeOffset: THREE.Vector3 = new THREE.Vector3();

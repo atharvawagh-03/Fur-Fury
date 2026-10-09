@@ -1,7 +1,8 @@
 /**
  * Grand Arena Gameplay & Character Scene
  * Integrates Lady Anuki with third-person kinematic controller,
- * Rapier 3D collision physics, dynamic follow camera, and cinematic vantage presets.
+ * Rapier 3D collision physics, dynamic follow camera, cinematic vantage presets,
+ * and Step 4: Rhazakar the Scarlet Dragon with the playable Opening Cinematic.
  */
 
 import * as THREE from 'three';
@@ -11,6 +12,10 @@ import { EnvironmentManager } from '../world/EnvironmentManager';
 import { ArenaCameraController, CameraPreset } from '../camera/ArenaCameraController';
 import { ThirdPersonCamera } from '../camera/ThirdPersonCamera';
 import { AnukiController } from '../character/AnukiController';
+import { RhazakarModel } from '../dragon/RhazakarModel';
+import { RhazakarAnimator } from '../dragon/RhazakarAnimator';
+import { DragonEffects } from '../dragon/DragonEffects';
+import { OpeningCinematic } from '../cinematic/OpeningCinematic';
 import { EventBus } from '../core/EventBus';
 
 export type ActiveCameraMode = 'THIRD_PERSON' | 'CINEMATIC';
@@ -24,8 +29,14 @@ export class ArenaScene implements IScene {
   private cameraController!: ArenaCameraController;
   private thirdPersonCamera!: ThirdPersonCamera;
   private anuki!: AnukiController;
-  private cameraMode: ActiveCameraMode = 'THIRD_PERSON';
 
+  // Step 4 Dragon & Cinematic Subsystems
+  private rhazakar!: RhazakarModel;
+  private dragonAnimator!: RhazakarAnimator;
+  private dragonEffects!: DragonEffects;
+  private cinematic!: OpeningCinematic;
+
+  private cameraMode: ActiveCameraMode = 'THIRD_PERSON';
   private eventBus = EventBus.getInstance();
   private unbindEvents: (() => void)[] = [];
   private elapsedTime: number = 0;
@@ -42,6 +53,18 @@ export class ArenaScene implements IScene {
     return this.anuki;
   }
 
+  public getRhazakar(): RhazakarModel {
+    return this.rhazakar;
+  }
+
+  public getDragonAnimator(): RhazakarAnimator {
+    return this.dragonAnimator;
+  }
+
+  public getCinematic(): OpeningCinematic {
+    return this.cinematic;
+  }
+
   public async init(context: SceneContext): Promise<void> {
     this.context = context;
 
@@ -55,7 +78,6 @@ export class ArenaScene implements IScene {
     this.scene.add(this.arena.getRoot());
 
     // 3. Spawn Lady Anuki with Kinematic Character Controller
-    // Spawns standing in the dueling circle facing the North Gate of Champions
     this.anuki = new AnukiController(
       this.scene,
       context.physicsWorld,
@@ -66,13 +88,29 @@ export class ArenaScene implements IScene {
       2.5
     );
 
-    // 4. Initialize Third-Person Follow Camera & Cinematic Camera
+    // 4. Initialize Rhazakar the Scarlet Dragon and VFX
+    this.rhazakar = new RhazakarModel();
+    this.scene.add(this.rhazakar.getRoot());
+
+    this.dragonAnimator = new RhazakarAnimator(this.rhazakar);
+    this.dragonEffects = new DragonEffects(this.scene);
+
+    // 5. Initialize Opening Cinematic Sequence Director
+    this.cinematic = new OpeningCinematic(
+      this.rhazakar,
+      this.dragonAnimator,
+      this.dragonEffects,
+      this.anuki,
+      context.cameraManager,
+      context.audioManager
+    );
+
+    // 6. Initialize Third-Person Follow Camera & Cinematic Camera
     this.thirdPersonCamera = new ThirdPersonCamera(context.cameraManager);
     this.thirdPersonCamera.setTarget(this.anuki.getModel().getRoot());
-
     this.cameraController = new ArenaCameraController(context.cameraManager);
 
-    // 5. Register EventBus listeners for UI controls
+    // 7. Register EventBus listeners for UI controls
     const unbindPreset = this.eventBus.on<CameraPreset>('SET_CAMERA_PRESET', (preset) => {
       this.cameraMode = 'CINEMATIC';
       this.cameraController.applyPreset(preset);
@@ -108,6 +146,35 @@ export class ArenaScene implements IScene {
       this.spawnInteractiveBoulder();
     });
     this.unbindEvents.push(unbindSpawn);
+
+    // Play/Skip Cinematic listeners
+    const unbindPlayCinematic = this.eventBus.on<void>('PLAY_OPENING_CINEMATIC', () => {
+      this.playOpeningCinematic();
+    });
+    this.unbindEvents.push(unbindPlayCinematic);
+
+    const unbindSkipCinematic = this.eventBus.on<void>('SKIP_OPENING_CINEMATIC', () => {
+      this.cinematic.skip();
+    });
+    this.unbindEvents.push(unbindSkipCinematic);
+
+    // Track mouse movement for cinematic look-around agency
+    const onMouseMove = (e: MouseEvent) => {
+      if (this.cinematic.isPlaying()) {
+        this.cinematic.handleLookOffset(e.movementX, e.movementY);
+      }
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    this.unbindEvents.push(() => window.removeEventListener('mousemove', onMouseMove));
+
+    // Launch opening cinematic on initial game start per PRD Section 10
+    this.playOpeningCinematic();
+  }
+
+  public playOpeningCinematic(): void {
+    this.cameraMode = 'CINEMATIC';
+    this.cinematic.play();
+    this.eventBus.emit('CAMERA_MODE_CHANGED', this.cameraMode);
   }
 
   private spawnInteractiveBoulder(): void {
@@ -144,6 +211,35 @@ export class ArenaScene implements IScene {
   public update(deltaTime: number): void {
     this.elapsedTime += deltaTime;
 
+    // Check Escape or Enter key to skip cinematic
+    if (this.cinematic.isPlaying()) {
+      if (
+        this.context.inputManager.isActionJustPressed('menu') ||
+        this.context.inputManager.isActionJustPressed('interact')
+      ) {
+        this.cinematic.skip();
+        return;
+      }
+
+      // Handle player flight banking input (A/D or Left/Right)
+      let lean = 0;
+      if (this.context.inputManager.isActionActive('left')) lean -= 1.0;
+      if (this.context.inputManager.isActionActive('right')) lean += 1.0;
+      this.cinematic.handleBankInput(lean);
+
+      // Update cinematic sequence & dragon
+      this.cinematic.update(deltaTime);
+      this.dragonAnimator.update(deltaTime);
+      this.dragonEffects.update(deltaTime, this.rhazakar.getRoot().position);
+
+      // Update atmosphere
+      this.environment.update(deltaTime, this.elapsedTime);
+      this.arena.update(deltaTime, this.elapsedTime);
+      return;
+    }
+
+    // --- PLAYABLE THIRD-PERSON DUEL GAMEPLAY ---
+
     // Check Lock-On toggle key (R key)
     if (this.context.inputManager.isActionJustPressed('lockOn')) {
       const isLocked = this.thirdPersonCamera.toggleLockOn(new THREE.Vector3(0, 1.2, -4));
@@ -169,6 +265,10 @@ export class ArenaScene implements IScene {
     // Update Lady Anuki (Controller, Animator, Particle FX, Audio)
     this.anuki.update(deltaTime, cameraYaw);
 
+    // Update Rhazakar in continuous overhead arena patrol mode
+    this.dragonAnimator.update(deltaTime);
+    this.dragonEffects.update(deltaTime, this.rhazakar.getRoot().position);
+
     // Update active camera
     if (this.cameraMode === 'THIRD_PERSON') {
       this.thirdPersonCamera.update(deltaTime);
@@ -184,14 +284,17 @@ export class ArenaScene implements IScene {
   }
 
   public fixedUpdate(fixedDeltaTime: number): void {
-    // Run Rapier 3D kinematic character controller simulation step
-    this.anuki.fixedUpdate(fixedDeltaTime);
+    // Only run Rapier kinematic step when not mounted on dragon
+    if (!this.cinematic.isPlaying() || this.cinematic.getCurrentBeat() === 'COMPLETED') {
+      this.anuki.fixedUpdate(fixedDeltaTime);
+    }
   }
 
   public destroy(): void {
     this.unbindEvents.forEach((unbind) => unbind());
     this.unbindEvents = [];
     this.anuki.dispose();
+    this.dragonEffects.dispose();
     this.environment.dispose();
     this.arena.dispose();
     this.scene.clear();

@@ -16,6 +16,7 @@ export interface KeyBindings {
   lockOn: string[];
   interact: string[];
   dragonCall: string[];
+  menu: string[];
 }
 
 export const DefaultKeyBindings: KeyBindings = {
@@ -31,6 +32,7 @@ export const DefaultKeyBindings: KeyBindings = {
   lockOn: ['KeyR', 'MiddleMouse'],
   interact: ['KeyE'],
   dragonCall: ['KeyT', 'KeyX'],
+  menu: ['Escape', 'Enter'],
 };
 
 export class InputManager {

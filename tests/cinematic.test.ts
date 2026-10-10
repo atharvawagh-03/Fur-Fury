@@ -120,6 +120,15 @@ describe('OpeningCinematic Sequence Director', () => {
     // Update through touchdown landing
     cinematic.update(3.0);
     assert.strictEqual(animator.getState(), 'TOUCHDOWN_LAND');
+
+    // Advance to sword draw prompt (reaches 5.6s in Beat 3)
+    cinematic.update(2.6);
+    assert.strictEqual(cinematic.isAwaitingSwordDraw(), true);
+
+    // Trigger sword draw
+    cinematic.triggerSwordDraw();
+    assert.strictEqual(cinematic.isAwaitingSwordDraw(), false);
+    assert.strictEqual(animator.getState(), 'GROUND_ROAR');
   });
 
   it('fast-forward skips cleanly to duel state with Anuki grounded and Rhazakar on overhead patrol', () => {

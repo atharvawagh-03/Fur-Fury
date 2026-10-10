@@ -392,6 +392,62 @@ export class AudioManager {
     });
   }
 
+  /**
+   * Unsheathe Moonfang sword with ringing steel flourish
+   */
+  public playSwordDraw(): void {
+    if (!this.ctx || !this.sfxGain) return;
+    const t = this.ctx.currentTime;
+
+    // Fast metal slide scrape
+    const scrape = this.ctx.createOscillator();
+    const scrapeGain = this.ctx.createGain();
+    scrape.type = 'sawtooth';
+    scrape.frequency.setValueAtTime(1400, t);
+    scrape.frequency.exponentialRampToValueAtTime(3200, t + 0.12);
+    scrapeGain.gain.setValueAtTime(0.12, t);
+    scrapeGain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    scrape.connect(scrapeGain);
+    scrapeGain.connect(this.sfxGain);
+    scrape.start(t);
+    scrape.stop(t + 0.12);
+
+    // Resonant silver chime ring
+    const ring = this.ctx.createOscillator();
+    const ringGain = this.ctx.createGain();
+    ring.type = 'sine';
+    ring.frequency.setValueAtTime(2600, t + 0.08);
+    ring.frequency.exponentialRampToValueAtTime(2400, t + 0.85);
+    ringGain.gain.setValueAtTime(0.22, t + 0.08);
+    ringGain.gain.exponentialRampToValueAtTime(0.001, t + 0.85);
+    ring.connect(ringGain);
+    ringGain.connect(this.sfxGain);
+    ring.start(t + 0.08);
+    ring.stop(t + 0.85);
+  }
+
+  /**
+   * Dragon Call Horn Summon Cue
+   */
+  public playDragonCall(): void {
+    if (!this.ctx || !this.sfxGain) return;
+    const t = this.ctx.currentTime;
+
+    // Resonant warhorn invocation
+    const horn = this.ctx.createOscillator();
+    const hornGain = this.ctx.createGain();
+    horn.type = 'triangle';
+    horn.frequency.setValueAtTime(160, t);
+    horn.frequency.linearRampToValueAtTime(220, t + 0.25);
+    horn.frequency.exponentialRampToValueAtTime(140, t + 1.2);
+    hornGain.gain.setValueAtTime(0.3, t);
+    hornGain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+    horn.connect(hornGain);
+    hornGain.connect(this.sfxGain);
+    horn.start(t);
+    horn.stop(t + 1.2);
+  }
+
   public setMasterVolume(val: number): void {
     if (this.masterGain) this.masterGain.gain.value = Math.max(0, Math.min(1, val));
   }

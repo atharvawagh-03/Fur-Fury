@@ -4,6 +4,7 @@
  * ground touchdown, roar, breathing idles, and overhead guardian arena patrols.
  */
 
+import * as THREE from 'three';
 import { RhazakarModel, RhazakarRig } from './RhazakarModel';
 
 export type DragonAnimState =
@@ -14,7 +15,8 @@ export type DragonAnimState =
   | 'TOUCHDOWN_LAND'
   | 'GROUND_ROAR'
   | 'GROUND_IDLE'
-  | 'OVERHEAD_PATROL';
+  | 'OVERHEAD_PATROL'
+  | 'DRAGON_CALL_FLYBY';
 
 export class RhazakarAnimator {
   private model: RhazakarModel;
@@ -45,6 +47,10 @@ export class RhazakarAnimator {
       this.state = nextState;
       this.stateTime = 0;
     }
+  }
+
+  public triggerDragonCall(): void {
+    this.setState('DRAGON_CALL_FLYBY');
   }
 
   public setBankAngle(target: number): void {
@@ -83,10 +89,16 @@ export class RhazakarAnimator {
       case 'OVERHEAD_PATROL':
         this.animateOverheadPatrol(deltaTime);
         break;
+      case 'DRAGON_CALL_FLYBY':
+        this.animateDragonCallFlyby(deltaTime);
+        break;
     }
 
     // Dynamic tail sine-wave undulation in all states
     this.animateTail(deltaTime);
+
+    // Synchronize organic wing membranes to follow articulated bones and fingers
+    this.model.updateWingMembranes();
   }
 
   /**
@@ -313,14 +325,14 @@ export class RhazakarAnimator {
     const root = this.model.getRoot();
     root.position.set(x, y, z);
 
-    // Look along tangent of circle
+    // Look along tangent of circle in the direction of flight
     const tangentX = -Math.sin(this.patrolAngle);
     const tangentZ = Math.cos(this.patrolAngle);
-    const heading = Math.atan2(tangentX, tangentZ);
-    root.rotation.set(0, heading + Math.PI, 0);
+    const heading = Math.atan2(-tangentX, -tangentZ);
+    root.rotation.set(0, heading, 0);
 
     // Natural inward banking roll on circular trajectory
-    const circleBank = 0.32;
+    const circleBank = 0.28;
     this.setBankAngle(circleBank);
 
     // Alternate between gliding and occasional flap
@@ -329,6 +341,44 @@ export class RhazakarAnimator {
       this.animateFlap(deltaTime, 1.4);
     } else {
       this.animateGlide(deltaTime);
+    }
+  }
+
+  /**
+   * Dragon Call Summon: Swoops down from high overhead patrol across the Grand Arena,
+   * roaring over the center dueling ring before returning to sky patrol
+   */
+  private animateDragonCallFlyby(deltaTime: number): void {
+    const totalDuration = 4.8;
+    const progress = Math.min(1, this.stateTime / totalDuration);
+
+    const root = this.model.getRoot();
+
+    // Flight arc from high sky south through arena center (x=0, y=5.2, z=0) to north sky
+    const startY = this.patrolAltitude;
+    const lowestY = 5.2;
+    const y = startY - Math.sin(progress * Math.PI) * (startY - lowestY);
+
+    // Z travels from 36 down to -36 (South to North)
+    const z = THREE.MathUtils.lerp(36, -36, progress);
+    const x = Math.sin(progress * Math.PI * 2) * 4.0;
+
+    root.position.set(x, y, z);
+
+    // Facing along trajectory (-Z direction)
+    const pitch = Math.cos(progress * Math.PI) * 0.35;
+    root.rotation.set(pitch, 0, Math.sin(progress * Math.PI) * 0.15);
+
+    if (progress < 0.35) {
+      this.animateDive(deltaTime);
+    } else if (progress < 0.65) {
+      this.animateGroundRoar(deltaTime);
+    } else {
+      this.animateFlap(deltaTime, 2.0); // Powerful climb
+    }
+
+    if (progress >= 1.0) {
+      this.setState('OVERHEAD_PATROL');
     }
   }
 

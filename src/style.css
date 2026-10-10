@@ -350,6 +350,27 @@ html, body {
   border-color: rgba(255, 255, 255, 0.4);
 }
 
+.btn-action.highlight-action {
+  background: linear-gradient(135deg, rgba(220, 40, 20, 0.4), rgba(180, 20, 10, 0.2));
+  border: 1px solid #ff4422;
+  color: #ffcc99;
+  box-shadow: 0 4px 14px rgba(220, 40, 20, 0.35);
+}
+
+.btn-action.highlight-action:hover:not(.disabled) {
+  background: linear-gradient(135deg, rgba(255, 60, 30, 0.6), rgba(200, 30, 15, 0.35));
+  border-color: #ff6633;
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(255, 60, 30, 0.5);
+}
+
+.btn-action.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(0.6);
+}
+
 /* Footer / Legend */
 .hud-footer {
   pointer-events: auto;
@@ -681,6 +702,9 @@ html, body {
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
   animation: promptPulse 1.8s infinite alternate;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
 }
 
 @keyframes promptPulse {

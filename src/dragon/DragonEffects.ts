@@ -29,11 +29,20 @@ export class DragonEffects {
   private emberLifetimes: Float32Array | null = null;
   private emberCount = 150;
 
+  // 4. Breath Vapor Particle System (PRD Section 10)
+  private vaporParticles: THREE.Points | null = null;
+  private vaporGeo: THREE.BufferGeometry | null = null;
+  private vaporPositions: Float32Array | null = null;
+  private vaporVelocities: Float32Array | null = null;
+  private vaporLifetimes: Float32Array | null = null;
+  private vaporCount = 80;
+
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.initSpeedLines();
     this.initShockwaveRing();
     this.initEmbers();
+    this.initBreathVapor();
   }
 
   private initSpeedLines(): void {
@@ -133,6 +142,75 @@ export class DragonEffects {
     this.emberParticles = new THREE.Points(this.emberGeo, emberMat);
     this.emberParticles.visible = false;
     this.scene.add(this.emberParticles);
+  }
+
+  private initBreathVapor(): void {
+    this.vaporPositions = new Float32Array(this.vaporCount * 3);
+    this.vaporVelocities = new Float32Array(this.vaporCount * 3);
+    this.vaporLifetimes = new Float32Array(this.vaporCount);
+
+    for (let i = 0; i < this.vaporCount; i++) {
+      const idx = i * 3;
+      this.vaporPositions[idx] = 0;
+      this.vaporPositions[idx + 1] = -100;
+      this.vaporPositions[idx + 2] = 0;
+      this.vaporLifetimes[i] = 0;
+    }
+
+    this.vaporGeo = new THREE.BufferGeometry();
+    this.vaporGeo.setAttribute('position', new THREE.BufferAttribute(this.vaporPositions, 3));
+
+    // Warm fiery mist sprite
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d')!;
+    const grad = ctx.createRadialGradient(32, 32, 2, 32, 32, 28);
+    grad.addColorStop(0, 'rgba(255, 235, 180, 0.85)');
+    grad.addColorStop(0.4, 'rgba(255, 120, 40, 0.45)');
+    grad.addColorStop(0.8, 'rgba(180, 40, 10, 0.15)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 64);
+    const texture = new THREE.CanvasTexture(canvas);
+
+    const vaporMat = new THREE.PointsMaterial({
+      size: 1.8,
+      map: texture,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      opacity: 0.8,
+    });
+
+    this.vaporParticles = new THREE.Points(this.vaporGeo, vaporMat);
+    this.vaporParticles.visible = false;
+    this.scene.add(this.vaporParticles);
+  }
+
+  public triggerBreathVapor(origin: THREE.Vector3, forwardDir?: THREE.Vector3): void {
+    if (!this.vaporParticles || !this.vaporPositions || !this.vaporVelocities || !this.vaporLifetimes) return;
+
+    this.vaporParticles.visible = true;
+    const dir = forwardDir || new THREE.Vector3(0, 0, -1);
+
+    for (let i = 0; i < this.vaporCount; i++) {
+      const idx = i * 3;
+      this.vaporPositions[idx] = origin.x + (Math.random() - 0.5) * 0.6;
+      this.vaporPositions[idx + 1] = origin.y + (Math.random() - 0.5) * 0.4;
+      this.vaporPositions[idx + 2] = origin.z + (Math.random() - 0.5) * 0.6;
+
+      const speed = 4.0 + Math.random() * 8.0;
+      this.vaporVelocities[idx] = dir.x * speed + (Math.random() - 0.5) * 2.5;
+      this.vaporVelocities[idx + 1] = dir.y * speed + 0.5 + Math.random() * 1.5;
+      this.vaporVelocities[idx + 2] = dir.z * speed + (Math.random() - 0.5) * 2.5;
+
+      this.vaporLifetimes[i] = 1.0 + Math.random() * 1.2;
+    }
+
+    if (this.vaporGeo) {
+      this.vaporGeo.attributes.position.needsUpdate = true;
+    }
   }
 
   private resetEmber(i: number, active: boolean): void {
@@ -261,6 +339,36 @@ export class DragonEffects {
         this.emberParticles.visible = false;
       }
     }
+
+    // Update breath vapor particles
+    if (this.vaporParticles && this.vaporParticles.visible && this.vaporPositions && this.vaporVelocities && this.vaporLifetimes) {
+      let activeVapor = 0;
+      for (let i = 0; i < this.vaporCount; i++) {
+        if (this.vaporLifetimes[i] > 0) {
+          this.vaporLifetimes[i] -= deltaTime;
+          const idx = i * 3;
+
+          this.vaporPositions[idx] += this.vaporVelocities[idx] * deltaTime;
+          this.vaporPositions[idx + 1] += this.vaporVelocities[idx + 1] * deltaTime;
+          this.vaporPositions[idx + 2] += this.vaporVelocities[idx + 2] * deltaTime;
+
+          // Drag & warm thermal rise
+          this.vaporVelocities[idx] *= 0.94;
+          this.vaporVelocities[idx + 1] += 1.2 * deltaTime; // Thermal lift
+          this.vaporVelocities[idx + 2] *= 0.94;
+
+          activeVapor++;
+        }
+      }
+
+      if (this.vaporGeo) {
+        this.vaporGeo.attributes.position.needsUpdate = true;
+      }
+
+      if (activeVapor === 0) {
+        this.vaporParticles.visible = false;
+      }
+    }
   }
 
   public dispose(): void {
@@ -275,6 +383,10 @@ export class DragonEffects {
     if (this.emberParticles) {
       this.scene.remove(this.emberParticles);
       this.emberGeo?.dispose();
+    }
+    if (this.vaporParticles) {
+      this.scene.remove(this.vaporParticles);
+      this.vaporGeo?.dispose();
     }
   }
 }

@@ -155,8 +155,22 @@ export class ArenaScene implements IScene {
 
     const unbindSkipCinematic = this.eventBus.on<void>('SKIP_OPENING_CINEMATIC', () => {
       this.cinematic.skip();
+      this.cameraMode = 'THIRD_PERSON';
+      this.eventBus.emit('CAMERA_MODE_CHANGED', this.cameraMode);
     });
     this.unbindEvents.push(unbindSkipCinematic);
+
+    const unbindDragonCall = this.eventBus.on<void>('TRIGGER_DRAGON_CALL', () => {
+      this.triggerDragonCall();
+    });
+    this.unbindEvents.push(unbindDragonCall);
+
+    const unbindDrawSword = this.eventBus.on<void>('DRAW_SWORD_ACTION', () => {
+      if (this.cinematic.isPlaying()) {
+        this.cinematic.triggerSwordDraw();
+      }
+    });
+    this.unbindEvents.push(unbindDrawSword);
 
     // Track mouse movement for cinematic look-around agency
     const onMouseMove = (e: MouseEvent) => {
@@ -175,6 +189,21 @@ export class ArenaScene implements IScene {
     this.cameraMode = 'CINEMATIC';
     this.cinematic.play();
     this.eventBus.emit('CAMERA_MODE_CHANGED', this.cameraMode);
+  }
+
+  public triggerDragonCall(): boolean {
+    if (this.dragonCallCooldown > 0 || this.cinematic.isPlaying()) return false;
+
+    this.dragonCallCooldown = this.DRAGON_CALL_MAX_COOLDOWN;
+    this.dragonAnimator.triggerDragonCall();
+    this.context.audioManager.playDragonCall();
+    this.context.cameraManager.addShake(0.28);
+
+    this.eventBus.emit('DRAGON_CALL_COOLDOWN', {
+      current: this.dragonCallCooldown,
+      max: this.DRAGON_CALL_MAX_COOLDOWN,
+    });
+    return true;
   }
 
   private spawnInteractiveBoulder(): void {
@@ -208,16 +237,29 @@ export class ArenaScene implements IScene {
     }
   }
 
+  private dragonCallCooldown: number = 0;
+  private readonly DRAGON_CALL_MAX_COOLDOWN: number = 18.0;
+
   public update(deltaTime: number): void {
     this.elapsedTime += deltaTime;
 
-    // Check Escape or Enter key to skip cinematic
+    // Handle cinematic active loop
     if (this.cinematic.isPlaying()) {
-      if (
-        this.context.inputManager.isActionJustPressed('menu') ||
-        this.context.inputManager.isActionJustPressed('interact')
-      ) {
+      // Check for contextual sword draw key (E or J key)
+      if (this.cinematic.isAwaitingSwordDraw()) {
+        if (
+          this.context.inputManager.isActionJustPressed('interact') ||
+          this.context.inputManager.isActionJustPressed('lightAttack')
+        ) {
+          this.cinematic.triggerSwordDraw();
+        }
+      }
+
+      // Check Escape key to skip cinematic
+      if (this.context.inputManager.isActionJustPressed('menu')) {
         this.cinematic.skip();
+        this.cameraMode = 'THIRD_PERSON';
+        this.eventBus.emit('CAMERA_MODE_CHANGED', this.cameraMode);
         return;
       }
 
@@ -236,6 +278,28 @@ export class ArenaScene implements IScene {
       this.environment.update(deltaTime, this.elapsedTime);
       this.arena.update(deltaTime, this.elapsedTime);
       return;
+    }
+
+    // Auto-transition camera when cinematic completes
+    if (!this.cinematic.isPlaying() && this.cameraMode === 'CINEMATIC' && this.cinematic.getCurrentBeat() === 'COMPLETED') {
+      this.cameraMode = 'THIRD_PERSON';
+      this.eventBus.emit('CAMERA_MODE_CHANGED', this.cameraMode);
+    }
+
+    // --- PLAYABLE THIRD-PERSON DUEL GAMEPLAY ---
+
+    // Update Dragon Call cooldown timer
+    if (this.dragonCallCooldown > 0) {
+      this.dragonCallCooldown = Math.max(0, this.dragonCallCooldown - deltaTime);
+      this.eventBus.emit('DRAGON_CALL_COOLDOWN', {
+        current: this.dragonCallCooldown,
+        max: this.DRAGON_CALL_MAX_COOLDOWN,
+      });
+    }
+
+    // Check Dragon Call action key (T or X key per PRD Section 9 & 10)
+    if (this.context.inputManager.isActionJustPressed('dragonCall')) {
+      this.triggerDragonCall();
     }
 
     // --- PLAYABLE THIRD-PERSON DUEL GAMEPLAY ---

@@ -45,15 +45,25 @@ export class OpeningCinematic {
   private beatTime: number = 0;
   private totalCinematicTime: number = 0;
 
-  // Flight path waypoints
-  private startPos = new THREE.Vector3(0, 38, -75);
-  private divePos = new THREE.Vector3(0, 26, -38);
-  private flarePos = new THREE.Vector3(0, 10, -8);
+  // Flight path waypoints: Rhazakar approaches from South (+Z) towards Center (0,0,0)
+  // so he flies forward facing World North (-Z, toward North Gate of Champions)
+  private startPos = new THREE.Vector3(0, 42, 85);
+  private divePos = new THREE.Vector3(0, 28, 48);
+  private flarePos = new THREE.Vector3(0, 9, 12);
   private landPos = new THREE.Vector3(0, 0, 0);
 
   // Dynamic player flight banking input
   private bankInput: number = 0;
   private currentBank: number = 0;
+
+  // Obstacle evasion states
+  private obstacle1Evaded: boolean = false;
+  private obstacle2Evaded: boolean = false;
+
+  // Contextual sword draw agency
+  private awaitingSwordDraw: boolean = false;
+  private swordDrawn: boolean = false;
+  private swordDrawTimer: number = 0;
 
   // Mounted look-around offsets
   private lookYaw: number = 0;
@@ -90,6 +100,10 @@ export class OpeningCinematic {
     return this.currentBeat;
   }
 
+  public isAwaitingSwordDraw(): boolean {
+    return this.awaitingSwordDraw;
+  }
+
   /**
    * Start or restart the opening cinematic sequence
    */
@@ -99,14 +113,20 @@ export class OpeningCinematic {
     this.beatTime = 0;
     this.currentBeat = 'BEAT_1_CLOUDBREAK';
 
-    // Reset sound flags
+    // Reset interaction & sound flags
+    this.obstacle1Evaded = false;
+    this.obstacle2Evaded = false;
+    this.awaitingSwordDraw = false;
+    this.swordDrawn = false;
+    this.swordDrawTimer = 0;
+
     this.playedHeartbeat = false;
     this.playedFlap = false;
     this.playedImpact = false;
     this.playedRoar = false;
     this.playedFanfare = false;
 
-    // Position Rhazakar at high start waypoint
+    // Position Rhazakar at high start waypoint facing World North (-Z)
     const root = this.rhazakar.getRoot();
     root.position.copy(this.startPos);
     root.rotation.set(0, 0, 0);
@@ -143,9 +163,11 @@ export class OpeningCinematic {
 
     this.active = false;
     this.currentBeat = 'COMPLETED';
+    this.awaitingSwordDraw = false;
+    this.swordDrawn = true;
 
-    // Position Anuki standing proudly in the dueling circle
-    this.detachAnukiFromPerch(new THREE.Vector3(0, 0, 2.5));
+    // Position Anuki standing proudly in the dueling circle facing North Gate
+    this.detachAnukiFromPerch(new THREE.Vector3(0, 0, -3.2));
 
     // Dragon takes off to continuous overhead patrol in the sky
     this.dragonAnimator.setState('OVERHEAD_PATROL');
@@ -159,6 +181,43 @@ export class OpeningCinematic {
       active: false,
       beat: 'COMPLETED',
       subtitle: null,
+      showPrompt: null,
+    });
+  }
+
+  /**
+   * Contextual interaction to draw Moonfang during Beat 3
+   */
+  public triggerSwordDraw(): void {
+    if (this.awaitingSwordDraw && !this.swordDrawn) {
+      this.completeSwordDraw();
+    }
+  }
+
+  private completeSwordDraw(): void {
+    this.awaitingSwordDraw = false;
+    this.swordDrawn = true;
+
+    // Play steel ring audio & trigger blade slash flourish
+    this.audioManager.playSwordDraw();
+    this.anuki.triggerAttackLight();
+
+    // Rhazakar responds with a thunderous ground roar
+    if (!this.playedRoar) {
+      this.dragonAnimator.setState('GROUND_ROAR');
+      this.audioManager.playDragonRoar();
+      this.dragonEffects.triggerBreathVapor(new THREE.Vector3(0, 1.8, -3.5));
+      this.cameraManager.addShake(0.38);
+      this.playedRoar = true;
+    }
+
+    this.eventBus.emit('CINEMATIC_STATE', {
+      active: true,
+      beat: this.currentBeat,
+      subtitle: {
+        speaker: 'Lady Anuki & Rhazakar',
+        text: '“I challenge the Rite. For Rhaz. For the Crown of Embers.”',
+      },
       showPrompt: null,
     });
   }
@@ -200,7 +259,7 @@ export class OpeningCinematic {
         break;
     }
 
-    // Keep Anuki attached to horn perch while mounted
+    // Keep Anuki attached to horn perch while mounted in air
     if (this.currentBeat === 'BEAT_1_CLOUDBREAK' || this.currentBeat === 'BEAT_2_GRAND_DIVE') {
       this.syncAnukiMountedPosition();
     }
@@ -213,9 +272,9 @@ export class OpeningCinematic {
     const beatDuration = 8.5;
     const progress = Math.min(1, this.beatTime / beatDuration);
 
-    // Rhazakar glides forward and slightly downward
+    // Rhazakar glides forward towards arena
     const root = this.rhazakar.getRoot();
-    root.position.lerpVectors(this.startPos, this.divePos, progress * 0.55);
+    root.position.lerpVectors(this.startPos, this.divePos, progress * 0.6);
     root.rotation.set(0, 0, 0);
 
     // Periodic wing flap
@@ -224,17 +283,17 @@ export class OpeningCinematic {
       this.playedFlap = true;
     }
 
-    // Camera: Starts with dramatic close-up facing Lady Anuki perched on the horns
+    // Camera: Dramatic close-up facing Lady Anuki perched on the horns
     const perchWorld = new THREE.Vector3();
     this.rhazakar.getPerchWorldPosition(perchWorld);
 
-    // Camera positioned in front of and slightly above Anuki, framing her face and the sweeping horns
-    const camTarget = perchWorld.clone().add(new THREE.Vector3(0, 0.4, 0));
+    // Camera positioned in front of Anuki looking at her face, bow, armor, and Moonfang
+    const camTarget = perchWorld.clone().add(new THREE.Vector3(0, 0.35, 0));
     const camPos = perchWorld.clone().add(
       new THREE.Vector3(
-        Math.sin(this.lookYaw) * 3.5,
-        1.1 + this.lookPitch * 1.5,
-        -3.8 + Math.cos(this.lookYaw) * 0.8
+        Math.sin(this.lookYaw) * 3.0,
+        0.75 + this.lookPitch * 1.2,
+        -2.8 + Math.cos(this.lookYaw) * 0.4
       )
     );
 
@@ -265,33 +324,62 @@ export class OpeningCinematic {
   private updateBeat2GrandDive(deltaTime: number): void {
     const beatDuration = 7.5;
     const progress = Math.min(1, this.beatTime / beatDuration);
-    const easeProgress = Math.pow(progress, 1.4); // Accelerating dive
+    const easeProgress = Math.pow(progress, 1.35); // Accelerating dive
 
     // Smooth banking input interpolation
     this.currentBank += (this.bankInput * 0.55 - this.currentBank) * Math.min(1, deltaTime * 4.0);
     this.dragonAnimator.setBankAngle(this.currentBank);
 
-    // Rhazakar dives steeply toward arena flare point
+    // Rhazakar dives steeply forward toward arena flare point
     const root = this.rhazakar.getRoot();
     const diveStartX = this.divePos.x;
-    const currentX = diveStartX + this.currentBank * 12.0;
+    const currentX = diveStartX + this.currentBank * 10.0;
 
     root.position.x = currentX;
     root.position.y = THREE.MathUtils.lerp(this.divePos.y, this.flarePos.y, easeProgress);
     root.position.z = THREE.MathUtils.lerp(this.divePos.z, this.flarePos.z, easeProgress);
 
-    // Pitch down into dive
-    root.rotation.x = 0.28 + Math.sin(progress * Math.PI) * 0.15;
-    root.rotation.z = this.currentBank * 0.8;
+    // Steep dive pitch and banking roll
+    root.rotation.x = -0.22 - Math.sin(progress * Math.PI) * 0.12;
+    root.rotation.z = -this.currentBank * 0.65;
 
-    // Camera: Trailing chase camera above and behind Rhazakar's giant wings
-    const camTarget = root.position.clone().add(new THREE.Vector3(0, 3.0, 4.0));
-    const camPos = root.position.clone().add(new THREE.Vector3(this.currentBank * 3.0, 9.0, 16.0));
+    // Obstacle evasion detection per PRD Beat 2
+    if (progress >= 0.3 && progress <= 0.45 && !this.obstacle1Evaded) {
+      this.obstacle1Evaded = true;
+      this.audioManager.playDragonWingFlap();
+      this.eventBus.emit('CINEMATIC_STATE', {
+        active: true,
+        beat: this.currentBeat,
+        subtitle: {
+          speaker: 'Veyrholm Spectators',
+          text: '“Look above! It dives past the Royal Pavilion banners!”',
+        },
+        showPrompt: '✨ Agile Maneuver past Pavilion Spires!',
+      });
+    }
+
+    if (progress >= 0.65 && progress <= 0.8 && !this.obstacle2Evaded) {
+      this.obstacle2Evaded = true;
+      this.audioManager.playDragonWingFlap();
+      this.eventBus.emit('CINEMATIC_STATE', {
+        active: true,
+        beat: this.currentBeat,
+        subtitle: {
+          speaker: 'Sir Garrick Ironjaw',
+          text: '“By the Crown... what is that creature in the sky?!”',
+        },
+        showPrompt: '✨ Weaving through tournament pennants!',
+      });
+    }
+
+    // Camera: Trailing chase camera behind Rhazakar's colossal wings
+    const camTarget = root.position.clone().add(new THREE.Vector3(0, 1.8, -12.0));
+    const camPos = root.position.clone().add(new THREE.Vector3(this.currentBank * 3.5, 8.5, 17.0));
 
     this.cameraManager.camera.position.lerp(camPos, Math.min(1, deltaTime * 8.0));
     this.cameraManager.camera.lookAt(camTarget);
 
-    // Subtle wind buffeting shake
+    // Wind buffeting shake
     this.cameraManager.addShake(0.04 + progress * 0.08);
 
     if (this.beatTime >= beatDuration) {
@@ -313,10 +401,10 @@ export class OpeningCinematic {
   }
 
   /**
-   * BEAT 3: Wing flare, heavy landing, dismount, and roar (Duration: 9.0 seconds)
+   * BEAT 3: Wing flare, heavy landing, dismount, and sword draw prompt (Duration: 9.5 seconds)
    */
   private updateBeat3Touchdown(deltaTime: number): void {
-    const beatDuration = 9.0;
+    const beatDuration = 9.5;
     const root = this.rhazakar.getRoot();
 
     // 0 - 2.0s: Wing Flare braking over center dueling ring
@@ -326,72 +414,76 @@ export class OpeningCinematic {
       root.rotation.set(0, 0, 0);
 
       const camTarget = new THREE.Vector3(0, 2.5, 0);
-      const camPos = new THREE.Vector3(0, 4.0, -18);
+      const camPos = new THREE.Vector3(0, 3.5, -16);
       this.cameraManager.camera.position.lerp(camPos, Math.min(1, deltaTime * 4.0));
       this.cameraManager.camera.lookAt(camTarget);
 
       this.syncAnukiMountedPosition();
     }
     // 2.0s: Impact Touchdown moment!
-    else if (this.beatTime >= 2.0 && this.beatTime < 4.5) {
+    else if (this.beatTime >= 2.0 && this.beatTime < 4.2) {
       if (!this.playedImpact) {
         root.position.copy(this.landPos);
         this.dragonAnimator.setState('TOUCHDOWN_LAND');
         this.dragonEffects.triggerTouchdownImpact(new THREE.Vector3(0, 0, 0));
+        this.dragonEffects.triggerBreathVapor(new THREE.Vector3(0, 1.2, -3.5));
         this.audioManager.playDragonImpact();
         this.cameraManager.addShake(0.65); // Big impact shake
         this.playedImpact = true;
       }
 
-      // Dragon lowers neck so Anuki's perch comes down near the arena floor
       this.syncAnukiMountedPosition();
 
       // Camera: Low-angle dramatic framing facing the grounded dragon and dismounting kitten
-      const camTarget = new THREE.Vector3(0, 1.8, -1.0);
-      const camPos = new THREE.Vector3(4.5, 1.5, 8.5);
+      const camTarget = new THREE.Vector3(0, 1.4, -2.0);
+      const camPos = new THREE.Vector3(3.5, 1.2, -7.5);
       this.cameraManager.camera.position.lerp(camPos, Math.min(1, deltaTime * 4.0));
       this.cameraManager.camera.lookAt(camTarget);
     }
-    // 4.5s - 6.5s: Anuki hops down to arena sand
-    else if (this.beatTime >= 4.5 && this.beatTime < 6.5) {
-      const dismountProg = Math.min(1, (this.beatTime - 4.5) / 1.5);
-      const dismountTarget = new THREE.Vector3(0, 0, 3.2);
+    // 4.2s - 5.5s: Anuki hops down to arena sand
+    else if (this.beatTime >= 4.2 && this.beatTime < 5.5) {
+      const dismountProg = Math.min(1, (this.beatTime - 4.2) / 1.3);
+      const dismountTarget = new THREE.Vector3(0, 0, -3.2);
 
-      // Interpolate Anuki stepping down from horns to ground
       const perchWorld = new THREE.Vector3();
       this.rhazakar.getPerchWorldPosition(perchWorld);
 
       const anukiPos = new THREE.Vector3().lerpVectors(perchWorld, dismountTarget, dismountProg);
-      // Small graceful arc
-      anukiPos.y += Math.sin(dismountProg * Math.PI) * 0.5;
+      anukiPos.y += Math.sin(dismountProg * Math.PI) * 0.5; // Graceful hop arc
       this.anuki.teleport(anukiPos.x, anukiPos.y, anukiPos.z);
 
       if (dismountProg >= 1.0) {
-        this.anuki.teleport(0, 0, 3.2);
+        this.anuki.teleport(0, 0, -3.2);
+        this.anuki.getModel().getRoot().rotation.set(0, 0, 0); // Face North Gate
       }
     }
-    // 6.5s - 9.0s: Rhazakar rears back and ROARS!
+    // 5.5s+: Contextual Sword Draw prompt & Roar
     else {
-      if (!this.playedRoar) {
-        this.dragonAnimator.setState('GROUND_ROAR');
-        this.audioManager.playDragonRoar();
-        this.cameraManager.addShake(0.35);
-        this.playedRoar = true;
-
+      if (!this.awaitingSwordDraw && !this.swordDrawn) {
+        this.awaitingSwordDraw = true;
+        this.swordDrawTimer = 0;
         this.eventBus.emit('CINEMATIC_STATE', {
           active: true,
           beat: this.currentBeat,
           subtitle: {
-            speaker: 'Rhazakar',
-            text: '“I can carry you to the gates, little flame. Beyond them, the choice must be yours.”',
+            speaker: 'Grand Arena',
+            text: 'The crowd laughter becomes dead silence as Lady Anuki reaches for her hilt...',
           },
-          showPrompt: null,
+          showPrompt: 'Press [E / J] to Draw Moonfang',
         });
       }
 
-      // Camera tracks Lady Anuki standing proud in front of the roaring dragon
-      const camTarget = new THREE.Vector3(0, 1.2, 2.5);
-      const camPos = new THREE.Vector3(-3.2, 1.6, 6.8);
+      // Auto-draw sword after 2.8s if player does not press key
+      if (this.awaitingSwordDraw && !this.swordDrawn) {
+        this.swordDrawTimer += deltaTime;
+        if (this.swordDrawTimer >= 2.8) {
+          this.completeSwordDraw();
+        }
+      }
+
+      // Camera frames Lady Anuki standing proud in front of Rhazakar
+      const camTarget = new THREE.Vector3(0, 1.0, -3.2);
+      const camPos = new THREE.Vector3(-2.8, 1.4, -6.8);
       this.cameraManager.camera.position.lerp(camPos, Math.min(1, deltaTime * 5.0));
       this.cameraManager.camera.lookAt(camTarget);
     }
@@ -426,7 +518,7 @@ export class OpeningCinematic {
     // Dragon ascends to sky
     const root = this.rhazakar.getRoot();
     root.position.y = THREE.MathUtils.lerp(0, 28, Math.sin((progress * Math.PI) / 2));
-    root.position.z = THREE.MathUtils.lerp(0, 24, progress);
+    root.position.z = THREE.MathUtils.lerp(0, -24, progress);
 
     if (this.beatTime < 1.0) {
       this.dragonAnimator.setState('FLY_FLAP');
@@ -453,7 +545,7 @@ export class OpeningCinematic {
   private syncAnukiMountedPosition(): void {
     const perchWorld = new THREE.Vector3();
     this.rhazakar.getPerchWorldPosition(perchWorld);
-    // Align Anuki facing forward on the dragon's head
+    // Align Anuki facing forward (-Z) on the dragon's head
     this.anuki.teleport(perchWorld.x, perchWorld.y, perchWorld.z);
     this.anuki.getModel().getRoot().rotation.set(0, 0, 0);
   }
@@ -462,10 +554,11 @@ export class OpeningCinematic {
     const perchWorld = new THREE.Vector3();
     this.rhazakar.getPerchWorldPosition(perchWorld);
     this.anuki.teleport(perchWorld.x, perchWorld.y, perchWorld.z);
+    this.anuki.getModel().getRoot().rotation.set(0, 0, 0);
   }
 
   private detachAnukiFromPerch(groundPos: THREE.Vector3): void {
     this.anuki.teleport(groundPos.x, groundPos.y, groundPos.z);
-    this.anuki.getModel().getRoot().rotation.set(0, Math.PI, 0); // Face North Gate
+    this.anuki.getModel().getRoot().rotation.set(0, 0, 0); // Face North Gate
   }
 }

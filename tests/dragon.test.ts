@@ -85,11 +85,22 @@ describe('RhazakarModel Articulated 3D Dragon Rig', () => {
     const perchWorld = new THREE.Vector3();
     dragon.getPerchWorldPosition(perchWorld);
     assert.ok(typeof perchWorld.y === 'number');
+
+    // Snout breath vapor socket extraction
+    assert.ok(rig.snoutSocket, 'Snout socket for breath vapor exists');
+    const snoutWorld = new THREE.Vector3();
+    dragon.getSnoutWorldPosition(snoutWorld);
+    assert.ok(typeof snoutWorld.z === 'number');
+
+    // Dynamic wing membranes update
+    dragon.updateWingMembranes();
+    const memGeoL = rig.wingMembraneL.geometry;
+    assert.ok(memGeoL.attributes.position.count === 13, 'Left wing membrane has 13 dynamic vertices');
   });
 });
 
 describe('RhazakarAnimator Kinematic State Machine', () => {
-  it('manages flight, flapping, dive, touchdown, roar, and patrol updates cleanly', () => {
+  it('manages flight, flapping, dive, touchdown, roar, patrol, and dragon call flyby cleanly', () => {
     const dragon = new RhazakarModel();
     const animator = new RhazakarAnimator(dragon);
 
@@ -127,11 +138,17 @@ describe('RhazakarAnimator Kinematic State Machine', () => {
     // Root position should be elevated in the sky during overhead patrol
     const rootPos = dragon.getRoot().position;
     assert.ok(rootPos.y > 20, 'Dragon altitude should be above 20m in overhead patrol');
+
+    // Trigger Dragon Call summon flyby
+    animator.triggerDragonCall();
+    assert.strictEqual(animator.getState(), 'DRAGON_CALL_FLYBY');
+    animator.update(0.5);
+    assert.strictEqual(animator.getState(), 'DRAGON_CALL_FLYBY');
   });
 });
 
 describe('DragonEffects Subsystem', () => {
-  it('initializes speed lines, triggers touchdown shockwave and clears resources', () => {
+  it('initializes speed lines, triggers touchdown shockwave, breath vapor, and clears resources', () => {
     const scene = new THREE.Scene();
     const fx = new DragonEffects(scene);
 
@@ -139,6 +156,7 @@ describe('DragonEffects Subsystem', () => {
     fx.update(0.016, new THREE.Vector3(0, 20, 0));
 
     fx.triggerTouchdownImpact(new THREE.Vector3(0, 0, 0));
+    fx.triggerBreathVapor(new THREE.Vector3(0, 2, -3));
     fx.update(0.016);
 
     fx.dispose();

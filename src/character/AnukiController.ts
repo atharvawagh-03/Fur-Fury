@@ -217,33 +217,48 @@ export class AnukiController {
     }
   }
 
+  public triggerAttackLight(): void {
+    if (this.isDodging) return;
+    this.isAttacking = true;
+    this.attackTimer = 0;
+    this.attackDuration = 0.36;
+    this.animator.setState('ATTACK_LIGHT');
+    this.audioManager.playSwordSwing(false);
+  }
+
+  public triggerAttackHeavy(): void {
+    if (this.isDodging) return;
+    this.isAttacking = true;
+    this.attackTimer = 0;
+    this.attackDuration = 0.54;
+    this.animator.setState('ATTACK_HEAVY');
+    this.audioManager.playSwordSwing(true);
+  }
+
+  public triggerParry(): void {
+    if (this.isDodging || this.isAttacking) return;
+    this.animator.setState('PARRY');
+    this.audioManager.playParryClang();
+  }
+
   private handleCombatInputs(): void {
     if (this.isDodging) return;
 
     // Light Attack (J key)
     if (this.inputManager.isActionJustPressed('lightAttack') && !this.isAttacking) {
-      this.isAttacking = true;
-      this.attackTimer = 0;
-      this.attackDuration = 0.36;
-      this.animator.setState('ATTACK_LIGHT');
-      this.audioManager.playSwordSwing(false);
+      this.triggerAttackLight();
       return;
     }
 
     // Heavy Attack (K key)
     if (this.inputManager.isActionJustPressed('heavyAttack') && !this.isAttacking) {
-      this.isAttacking = true;
-      this.attackTimer = 0;
-      this.attackDuration = 0.54;
-      this.animator.setState('ATTACK_HEAVY');
-      this.audioManager.playSwordSwing(true);
+      this.triggerAttackHeavy();
       return;
     }
 
     // Parry (Q or F key)
     if (this.inputManager.isActionJustPressed('parry') && !this.isAttacking) {
-      this.animator.setState('PARRY');
-      this.audioManager.playParryClang();
+      this.triggerParry();
       return;
     }
 

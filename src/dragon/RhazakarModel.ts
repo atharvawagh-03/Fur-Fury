@@ -12,6 +12,15 @@
 import * as THREE from 'three';
 import { RhazakarMaterials } from './RhazakarMaterials';
 
+export interface WingAnchorData {
+  flankAnchor: THREE.Group;
+  shoulder: THREE.Group;
+  elbow: THREE.Group;
+  wrist: THREE.Group;
+  fingerTips: THREE.Group[];
+  membraneGeo: THREE.BufferGeometry;
+}
+
 export interface RhazakarRig {
   root: THREE.Group;
   pelvis: THREE.Group;
@@ -23,7 +32,12 @@ export interface RhazakarRig {
   head: THREE.Group;
   jaw: THREE.Group;
   perchSocket: THREE.Group; // Attachment point for Lady Anuki between the horns
+  snoutSocket: THREE.Group; // Breath vapor & roar particle socket
   throatLight: THREE.PointLight;
+
+  // Flank attachment anchors
+  flankAnchorL: THREE.Group;
+  flankAnchorR: THREE.Group;
 
   // Wings
   wingShoulderL: THREE.Group;
@@ -63,6 +77,8 @@ export interface RhazakarRig {
 export class RhazakarModel {
   private group: THREE.Group;
   private rig!: RhazakarRig;
+  private leftWingAnchors!: WingAnchorData;
+  private rightWingAnchors!: WingAnchorData;
 
   constructor() {
     this.group = new THREE.Group();
@@ -87,6 +103,12 @@ export class RhazakarModel {
   public getPerchWorldQuaternion(out: THREE.Quaternion): void {
     if (this.rig && this.rig.perchSocket) {
       this.rig.perchSocket.getWorldQuaternion(out);
+    }
+  }
+
+  public getSnoutWorldPosition(out: THREE.Vector3): void {
+    if (this.rig && this.rig.snoutSocket) {
+      this.rig.snoutSocket.getWorldPosition(out);
     }
   }
 
@@ -353,16 +375,35 @@ export class RhazakarModel {
     saddleRim.rotation.x = Math.PI * 0.5;
     perchSocket.add(saddleRim);
 
-    // 7. Colossal Articulated Wings (Left & Right)
-    const { shoulder: wingShoulderL, elbow: wingElbowL, wrist: wingWristL, fingers: wingFingersL, membrane: wingMembraneL } =
-      this.createArticulatedWing(wingBoneMat, wingMat, true);
-    wingShoulderL.position.set(-2.4, 1.2, 0.2);
-    chest.add(wingShoulderL);
+    // Breath vapor socket at the tip of the snout
+    const snoutSocket = new THREE.Group();
+    snoutSocket.name = 'Snout_Socket_Breath';
+    snoutSocket.position.set(0, -0.2, -3.2);
+    head.add(snoutSocket);
 
-    const { shoulder: wingShoulderR, elbow: wingElbowR, wrist: wingWristR, fingers: wingFingersR, membrane: wingMembraneR } =
-      this.createArticulatedWing(wingBoneMat, wingMat, false);
-    wingShoulderR.position.set(2.4, 1.2, 0.2);
-    chest.add(wingShoulderR);
+    // Flank attachment anchors for wing membranes
+    const flankAnchorL = new THREE.Group();
+    flankAnchorL.name = 'Flank_Anchor_L';
+    flankAnchorL.position.set(-2.2, -0.4, 1.8);
+    chest.add(flankAnchorL);
+
+    const flankAnchorR = new THREE.Group();
+    flankAnchorR.name = 'Flank_Anchor_R';
+    flankAnchorR.position.set(2.2, -0.4, 1.8);
+    chest.add(flankAnchorR);
+
+    // 7. Colossal Articulated Wings (Left & Right)
+    const leftWing = this.createArticulatedWing(wingBoneMat, wingMat, true, flankAnchorL);
+    leftWing.shoulder.position.set(-2.4, 1.2, 0.2);
+    chest.add(leftWing.shoulder);
+    this.group.add(leftWing.membrane);
+    this.leftWingAnchors = leftWing.anchors;
+
+    const rightWing = this.createArticulatedWing(wingBoneMat, wingMat, false, flankAnchorR);
+    rightWing.shoulder.position.set(2.4, 1.2, 0.2);
+    chest.add(rightWing.shoulder);
+    this.group.add(rightWing.membrane);
+    this.rightWingAnchors = rightWing.anchors;
 
     // 8. Forelegs (Shoulder -> Thigh -> Shin -> Taloned Foot)
     const { thigh: frontThighL, shin: frontShinL, foot: frontFootL } =
@@ -446,19 +487,23 @@ export class RhazakarModel {
       head,
       jaw,
       perchSocket,
+      snoutSocket,
       throatLight,
 
-      wingShoulderL,
-      wingElbowL,
-      wingWristL,
-      wingFingersL,
-      wingMembraneL,
+      flankAnchorL,
+      flankAnchorR,
 
-      wingShoulderR,
-      wingElbowR,
-      wingWristR,
-      wingFingersR,
-      wingMembraneR,
+      wingShoulderL: leftWing.shoulder,
+      wingElbowL: leftWing.elbow,
+      wingWristL: leftWing.wrist,
+      wingFingersL: leftWing.fingers,
+      wingMembraneL: leftWing.membrane,
+
+      wingShoulderR: rightWing.shoulder,
+      wingElbowR: rightWing.elbow,
+      wingWristR: rightWing.wrist,
+      wingFingersR: rightWing.fingers,
+      wingMembraneR: rightWing.membrane,
 
       frontThighL,
       frontShinL,
@@ -478,6 +523,85 @@ export class RhazakarModel {
 
       tailSegments,
     };
+
+    // Initialize wing membrane vertex buffer
+    this.updateWingMembranes();
+  }
+
+  /**
+   * Dynamically updates the wing membrane vertices to conform precisely to the bones and fingers
+   */
+  public updateWingMembranes(): void {
+    if (this.leftWingAnchors) {
+      this.updateSingleWingMembrane(this.leftWingAnchors, true);
+    }
+    if (this.rightWingAnchors) {
+      this.updateSingleWingMembrane(this.rightWingAnchors, false);
+    }
+  }
+
+  private updateSingleWingMembrane(anchors: WingAnchorData, _isLeft: boolean): void {
+    if (!anchors || !anchors.membraneGeo) return;
+
+    const root = this.group;
+    const posAttr = anchors.membraneGeo.attributes.position as THREE.BufferAttribute;
+    const tempWorld = new THREE.Vector3();
+
+    // 0. Flank
+    anchors.flankAnchor.getWorldPosition(tempWorld);
+    const vFlank = root.worldToLocal(tempWorld.clone());
+
+    // 1. Shoulder
+    anchors.shoulder.getWorldPosition(tempWorld);
+    const vShoulder = root.worldToLocal(tempWorld.clone());
+
+    // 2. Elbow
+    anchors.elbow.getWorldPosition(tempWorld);
+    const vElbow = root.worldToLocal(tempWorld.clone());
+
+    // 3. Wrist
+    anchors.wrist.getWorldPosition(tempWorld);
+    const vWrist = root.worldToLocal(tempWorld.clone());
+
+    // 4..7 Finger tips
+    const vF: THREE.Vector3[] = [];
+    for (let f = 0; f < 4; f++) {
+      if (anchors.fingerTips[f]) {
+        anchors.fingerTips[f].getWorldPosition(tempWorld);
+        vF.push(root.worldToLocal(tempWorld.clone()));
+      } else {
+        vF.push(vWrist.clone());
+      }
+    }
+
+    // 8. Scallop 0-1
+    const vScallop01 = new THREE.Vector3().lerpVectors(vF[0], vF[1], 0.5).lerp(vWrist, 0.16);
+    // 9. Scallop 1-2
+    const vScallop12 = new THREE.Vector3().lerpVectors(vF[1], vF[2], 0.5).lerp(vWrist, 0.18);
+    // 10. Scallop 2-3
+    const vScallop23 = new THREE.Vector3().lerpVectors(vF[2], vF[3], 0.5).lerp(vWrist, 0.22);
+    // 11. Scallop 3-Elbow
+    const vScallop3Elbow = new THREE.Vector3().lerpVectors(vF[3], vFlank, 0.5).lerp(vElbow, 0.2);
+    // 12. Mid Forearm
+    const vMidForearm = new THREE.Vector3().lerpVectors(vElbow, vWrist, 0.5);
+    vMidForearm.y += 0.25;
+
+    posAttr.setXYZ(0, vFlank.x, vFlank.y, vFlank.z);
+    posAttr.setXYZ(1, vShoulder.x, vShoulder.y, vShoulder.z);
+    posAttr.setXYZ(2, vElbow.x, vElbow.y, vElbow.z);
+    posAttr.setXYZ(3, vWrist.x, vWrist.y, vWrist.z);
+    posAttr.setXYZ(4, vF[0].x, vF[0].y, vF[0].z);
+    posAttr.setXYZ(5, vF[1].x, vF[1].y, vF[1].z);
+    posAttr.setXYZ(6, vF[2].x, vF[2].y, vF[2].z);
+    posAttr.setXYZ(7, vF[3].x, vF[3].y, vF[3].z);
+    posAttr.setXYZ(8, vScallop01.x, vScallop01.y, vScallop01.z);
+    posAttr.setXYZ(9, vScallop12.x, vScallop12.y, vScallop12.z);
+    posAttr.setXYZ(10, vScallop23.x, vScallop23.y, vScallop23.z);
+    posAttr.setXYZ(11, vScallop3Elbow.x, vScallop3Elbow.y, vScallop3Elbow.z);
+    posAttr.setXYZ(12, vMidForearm.x, vMidForearm.y, vMidForearm.z);
+
+    posAttr.needsUpdate = true;
+    anchors.membraneGeo.computeVertexNormals();
   }
 
   /**
@@ -486,13 +610,15 @@ export class RhazakarModel {
   private createArticulatedWing(
     boneMat: THREE.Material,
     membraneMat: THREE.Material,
-    isLeft: boolean
+    isLeft: boolean,
+    flankAnchor: THREE.Group
   ): {
     shoulder: THREE.Group;
     elbow: THREE.Group;
     wrist: THREE.Group;
     fingers: THREE.Group[];
     membrane: THREE.Mesh;
+    anchors: WingAnchorData;
   } {
     const sideSign = isLeft ? -1 : 1;
 
@@ -547,6 +673,7 @@ export class RhazakarModel {
 
     // 4 Articulated Wing Finger Phalanges spreading the flight membrane
     const fingers: THREE.Group[] = [];
+    const fingerTips: THREE.Group[] = [];
     const fingerAngles = [0.15, 0.5, 0.85, 1.25];
     const fingerLengths = [9.5, 9.0, 8.2, 7.0];
 
@@ -565,30 +692,83 @@ export class RhazakarModel {
       phalanx.castShadow = true;
       fingerGroup.add(phalanx);
 
+      // Dedicated Tip Anchor for tracking membrane edge
+      const tipAnchor = new THREE.Group();
+      tipAnchor.name = `Finger_Tip_${f}`;
+      tipAnchor.position.set(0, -fLen * 0.92, fLen * 0.88);
+      fingerGroup.add(tipAnchor);
+      fingerTips.push(tipAnchor);
+
       wrist.add(fingerGroup);
       fingers.push(fingerGroup);
     }
 
-    // Leathery Flight Membrane (Triangulated wing sail geometry spanning the bones)
-    const memGeo = new THREE.PlaneGeometry(16, 11, 8, 6);
-    // Displace vertices to form natural curved aerodynamic aerofoil
-    const pos = memGeo.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      const u = pos.getX(i);
-      const v = pos.getY(i);
-      const sag = Math.sin((u / 16 + 0.5) * Math.PI) * 0.8 * Math.cos((v / 11) * Math.PI);
-      pos.setZ(i, sag);
-    }
-    memGeo.computeVertexNormals();
+    // Dynamic Leathery Flight Membrane BufferGeometry (13 vertices, 11 triangles)
+    const membraneGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(13 * 3);
+    const uvs = new Float32Array([
+      0.05, 0.2,   // 0: Flank
+      0.2, 0.85,   // 1: Shoulder
+      0.45, 0.8,   // 2: Elbow
+      0.7, 0.75,   // 3: Wrist
+      0.98, 0.9,   // 4: F0 Tip
+      0.95, 0.65,  // 5: F1 Tip
+      0.88, 0.4,   // 6: F2 Tip
+      0.75, 0.15,  // 7: F3 Tip
+      0.92, 0.75,  // 8: Scallop01
+      0.86, 0.5,   // 9: Scallop12
+      0.76, 0.25,  // 10: Scallop23
+      0.5, 0.15,   // 11: Scallop3Elbow
+      0.58, 0.8    // 12: Mid Forearm
+    ]);
 
-    const membrane = new THREE.Mesh(memGeo, membraneMat);
-    membrane.position.set(sideSign * 6.5, -1.8, 2.5);
-    membrane.rotation.x = Math.PI * 0.45;
-    membrane.rotation.y = sideSign * 0.15;
+    const indices = isLeft
+      ? [
+          0, 1, 2,
+          0, 2, 11,
+          2, 12, 3,
+          2, 3, 11,
+          3, 4, 8,
+          3, 8, 5,
+          3, 5, 9,
+          3, 9, 6,
+          3, 6, 10,
+          3, 10, 7,
+          3, 7, 11,
+        ]
+      : [
+          0, 2, 1,
+          0, 11, 2,
+          2, 3, 12,
+          2, 11, 3,
+          3, 8, 4,
+          3, 5, 8,
+          3, 9, 5,
+          3, 6, 9,
+          3, 10, 6,
+          3, 7, 10,
+          3, 11, 7,
+        ];
+
+    membraneGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    membraneGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    membraneGeo.setIndex(indices);
+
+    const membrane = new THREE.Mesh(membraneGeo, membraneMat);
+    membrane.name = isLeft ? 'Wing_Membrane_L' : 'Wing_Membrane_R';
     membrane.castShadow = true;
-    shoulder.add(membrane);
+    membrane.receiveShadow = true;
 
-    return { shoulder, elbow, wrist, fingers, membrane };
+    const anchors: WingAnchorData = {
+      flankAnchor,
+      shoulder,
+      elbow,
+      wrist,
+      fingerTips,
+      membraneGeo,
+    };
+
+    return { shoulder, elbow, wrist, fingers, membrane, anchors };
   }
 
   /**

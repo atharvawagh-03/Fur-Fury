@@ -175,6 +175,10 @@ export class UIManager {
 
         <!-- Interactive Action Deck -->
         <div class="control-deck">
+          <button id="btn-action-dragon" class="btn-action highlight-action">
+            <span class="icon">🐉</span>
+            <span id="btn-dragon-label">Dragon Call (T/X)</span>
+          </button>
           <button id="btn-action-dodge" class="btn-action">
             <span class="icon">🌀</span>
             <span>Dodge Roll (Space)</span>
@@ -201,9 +205,10 @@ export class UIManager {
         <footer class="hud-footer">
           <div class="controls-legend">
             <span class="legend-chip"><kbd>WASD</kbd> Move / Dragon Bank</span>
+            <span class="legend-chip"><kbd>T / X</kbd> Dragon Call</span>
             <span class="legend-chip"><kbd>SHIFT</kbd> Sprint / Guard</span>
             <span class="legend-chip"><kbd>SPACE</kbd> Evasive Dodge Roll</span>
-            <span class="legend-chip"><kbd>J</kbd> Light Attack</span>
+            <span class="legend-chip"><kbd>J</kbd> Light Attack / Draw Blade</span>
             <span class="legend-chip"><kbd>K</kbd> Heavy Strike</span>
             <span class="legend-chip"><kbd>Q / F</kbd> Parry</span>
             <span class="legend-chip"><kbd>R</kbd> Duel Lock-On</span>
@@ -331,6 +336,21 @@ export class UIManager {
       });
     }
 
+    const btnDragon = document.getElementById('btn-action-dragon');
+    if (btnDragon) {
+      btnDragon.addEventListener('click', () => {
+        this.audioManager.unlock();
+        this.eventBus.emit('TRIGGER_DRAGON_CALL');
+      });
+    }
+
+    if (this.cinematicPrompt) {
+      this.cinematicPrompt.addEventListener('click', () => {
+        this.audioManager.unlock();
+        this.eventBus.emit('DRAW_SWORD_ACTION');
+      });
+    }
+
     // Auto unlock audio on any interaction
     window.addEventListener('pointerdown', () => this.audioManager.unlock(), { once: true });
     window.addEventListener('keydown', () => this.audioManager.unlock(), { once: true });
@@ -440,6 +460,21 @@ export class UIManager {
         btnOrbit.textContent = `Auto Orbit: ${active ? 'ON' : 'OFF'}`;
         if (active) btnOrbit.classList.add('active');
         else btnOrbit.classList.remove('active');
+      }
+    });
+
+    // Dragon Call Cooldown
+    this.eventBus.on<{ current: number; max: number }>('DRAGON_CALL_COOLDOWN', (cd) => {
+      const btnDragon = document.getElementById('btn-action-dragon') as HTMLButtonElement | null;
+      const label = document.getElementById('btn-dragon-label');
+      if (btnDragon && label) {
+        if (cd.current > 0) {
+          label.textContent = `Dragon Call (${Math.ceil(cd.current)}s)`;
+          btnDragon.classList.add('disabled');
+        } else {
+          label.textContent = 'Dragon Call (T/X)';
+          btnDragon.classList.remove('disabled');
+        }
       }
     });
   }

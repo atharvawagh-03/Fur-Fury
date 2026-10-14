@@ -12,6 +12,10 @@ import { UIManager } from '../ui/UIManager';
 import { Engine } from './Engine';
 import { BootScene } from '../scenes/BootScene';
 import { ArenaScene } from '../scenes/ArenaScene';
+import { RosebridgeScene } from '../scenes/RosebridgeScene';
+import { BellforgeScene } from '../scenes/BellforgeScene';
+import { EventBus } from './EventBus';
+import { StageId } from '../progression/LevelProgressionManager';
 
 export class Game {
   private engine!: Engine;
@@ -54,8 +58,24 @@ export class Game {
     // Register scenes
     const bootScene = new BootScene();
     const arenaScene = new ArenaScene();
+    const rosebridgeScene = new RosebridgeScene();
+    const bellforgeScene = new BellforgeScene();
     this.sceneManager.registerScene(bootScene);
     this.sceneManager.registerScene(arenaScene);
+    this.sceneManager.registerScene(rosebridgeScene);
+    this.sceneManager.registerScene(bellforgeScene);
+
+    // Dynamic Fast Travel / Stage Transition Listener
+    EventBus.getInstance().on<StageId>('STAGE_TRANSITION_REQUESTED', async (stageId) => {
+      console.log(`[Fur & Fury] Fast-travelling to stage: ${stageId}`);
+      if (stageId === 'grand_arena') {
+        await this.sceneManager.switchScene(arenaScene.id);
+      } else if (stageId === 'rosebridge_keep') {
+        await this.sceneManager.switchScene(rosebridgeScene.id);
+      } else if (stageId === 'bellforge_foundry') {
+        await this.sceneManager.switchScene(bellforgeScene.id);
+      }
+    });
 
     // Switch to Grand Arena primary environment
     await this.sceneManager.switchScene(arenaScene.id);

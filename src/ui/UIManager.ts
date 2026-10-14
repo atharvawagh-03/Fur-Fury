@@ -13,6 +13,7 @@ import { PlayerStats } from '../character/AnukiController';
 import { ActiveCameraMode } from '../scenes/ArenaScene';
 import { CinematicBeat } from '../cinematic/OpeningCinematic';
 import { BossStats } from '../enemy/EnemyTypes';
+import { LevelProgressionManager, StageId, CAMPAIGN_STAGES } from '../progression/LevelProgressionManager';
 
 export interface CinematicStatePayload {
   active: boolean;
@@ -27,6 +28,7 @@ export class UIManager {
   private timeRef: Time | null = null;
   private eventBus = EventBus.getInstance();
   private audioManager: AudioManager;
+  private progressionManager = LevelProgressionManager.getInstance();
 
   // Real-time elements
   private hpBarFill: HTMLElement | null = null;
@@ -38,16 +40,29 @@ export class UIManager {
   private lockOnBtn: HTMLElement | null = null;
   private heroCamBtn: HTMLElement | null = null;
 
-  // Step 6 Boss HUD & Surrender Dialogue elements
+  // Step 6 & 7 Boss HUD & Surrender Dialogue elements
   private bossHud: HTMLElement | null = null;
+  private bossNameEl: HTMLElement | null = null;
+  private bossSubtitleEl: HTMLElement | null = null;
   private bossHpFill: HTMLElement | null = null;
   private bossPoiseFill: HTMLElement | null = null;
   private bossHpText: HTMLElement | null = null;
   private bossStateText: HTMLElement | null = null;
   private bossPhaseBadge: HTMLElement | null = null;
   private surrenderCard: HTMLElement | null = null;
+  private surrenderSpeaker: HTMLElement | null = null;
+  private surrenderQuote: HTMLElement | null = null;
   private btnMercy: HTMLButtonElement | null = null;
   private btnVictory: HTMLButtonElement | null = null;
+
+  // Step 7 Progression, Fast-Travel & Upgrades
+  private sealBanner: HTMLElement | null = null;
+  private sealAwardIcon: HTMLElement | null = null;
+  private sealAwardName: HTMLElement | null = null;
+  private sealAwardUnlock: HTMLElement | null = null;
+  private stagesModal: HTMLElement | null = null;
+  private sealsModal: HTMLElement | null = null;
+  private upgradesModal: HTMLElement | null = null;
 
   // Cinematic UI elements
   private cinematicContainer: HTMLElement | null = null;
@@ -113,15 +128,30 @@ export class UIManager {
               <span class="hero-weapon">Blade: <strong>${GameConfig.HERO.WEAPON}</strong></span>
             </div>
           </div>
+          <div class="campaign-nav-deck">
+            <button class="nav-btn" id="btn-nav-travel">🗺️ Travel</button>
+            <button class="nav-btn" id="btn-nav-seals">🛡️ Oath Seals</button>
+            <button class="nav-btn" id="btn-nav-upgrades">⚡ Skill Tree</button>
+          </div>
         </header>
 
         <!-- Milestone Badge -->
         <div class="milestone-badge">
-          <span class="pill">STEP 6 ACTIVE</span>
-          <span class="milestone-desc">Human Knight Enemies & Combat AI</span>
+          <span class="pill">STEP 7 ACTIVE</span>
+          <span class="milestone-desc">Level Progression & Boss Battles</span>
         </div>
 
-        <!-- Boss Health & Poise HUD (Sir Garrick Ironjaw) -->
+        <!-- Oath Seal Celebratory Banner -->
+        <div class="seal-awarded-banner" id="seal-awarded-banner" style="display: none;">
+          <span class="seal-burst-icon" id="seal-award-icon">🛡️</span>
+          <div class="seal-award-info">
+            <span class="seal-award-title">OATH SEAL ACQUIRED!</span>
+            <span class="seal-award-name" id="seal-award-name">Gatekeeper's Iron Seal</span>
+            <span class="seal-award-unlock" id="seal-award-unlock">Rosebridge Keep Unlocked!</span>
+          </div>
+        </div>
+
+        <!-- Boss Health & Poise HUD -->
         <div class="boss-health-hud" id="boss-hud">
           <div class="boss-header-row">
             <span class="boss-icon">⚔️</span>
@@ -148,11 +178,47 @@ export class UIManager {
 
         <!-- Surrender & Spare Dialogue Modal per PRD Beat 3:30-4:10 -->
         <div class="surrender-dialogue-card" id="surrender-card" style="display: none;">
-          <div class="speaker-tag">🛡️ Sir Garrick Ironjaw</div>
-          <p class="dialogue-quote">“Yield... you fight with the heart of a lion, little flame. The North Gate is yours.”</p>
+          <div class="speaker-tag" id="surrender-speaker">🛡️ Sir Garrick Ironjaw</div>
+          <p class="dialogue-quote" id="surrender-quote">“Yield... you fight with the heart of a lion, little flame. The North Gate is yours.”</p>
           <div class="narrative-choice-btns">
             <button class="choice-btn mercy-btn" id="btn-mercy">🐾 [E] Offer Paw in Mercy</button>
             <button class="choice-btn victory-btn" id="btn-victory">🗡️ [J] Raise Blade in Victory</button>
+          </div>
+        </div>
+
+        <!-- Fast Travel Stage Select Modal -->
+        <div class="progression-modal" id="modal-stages" style="display: none;">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h3>🗺️ Campaign Map & Fast Travel</h3>
+              <button class="modal-close-btn" id="btn-close-stages">✕</button>
+            </div>
+            <p class="modal-desc">Travel between unlocked knightly strongholds of Veyrholm.</p>
+            <div class="stages-grid" id="stages-grid-container"></div>
+          </div>
+        </div>
+
+        <!-- Oath Seals Showcase Modal -->
+        <div class="progression-modal" id="modal-seals" style="display: none;">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h3>🛡️ Sacred Oath Seals</h3>
+              <button class="modal-close-btn" id="btn-close-seals">✕</button>
+            </div>
+            <p class="modal-desc">Collect all 3 Knightly Seals to restore honor to Veyrholm and unlock the Citadel.</p>
+            <div class="seals-grid" id="seals-grid-container"></div>
+          </div>
+        </div>
+
+        <!-- Skill Upgrades Modal -->
+        <div class="progression-modal" id="modal-upgrades" style="display: none;">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h3>⚡ Lady Anuki’s Skill Upgrades</h3>
+              <button class="modal-close-btn" id="btn-close-upgrades">✕</button>
+            </div>
+            <p class="modal-desc">Enhance Lady Anuki’s agility, blade mastery, and dragon vitality.</p>
+            <div class="upgrades-list" id="upgrades-list-container"></div>
           </div>
         </div>
 
@@ -298,21 +364,66 @@ export class UIManager {
     this.skipCinematicBtn = document.getElementById('btn-skip-cinematic');
     this.playCinematicBtn = document.getElementById('btn-play-cinematic');
 
-    // Step 6 Boss HUD & Surrender Choice Elements
+    // Step 6 & 7 Boss HUD & Surrender Choice Elements
     this.bossHud = document.getElementById('boss-hud');
+    this.bossNameEl = document.getElementById('boss-name');
+    this.bossSubtitleEl = document.getElementById('boss-subtitle');
     this.bossHpFill = document.getElementById('boss-hp-fill');
     this.bossPoiseFill = document.getElementById('boss-poise-fill');
     this.bossHpText = document.getElementById('boss-hp-text');
     this.bossStateText = document.getElementById('boss-state-text');
     this.bossPhaseBadge = document.getElementById('boss-phase-badge');
     this.surrenderCard = document.getElementById('surrender-card');
+    this.surrenderSpeaker = document.getElementById('surrender-speaker');
+    this.surrenderQuote = document.getElementById('surrender-quote');
     this.btnMercy = document.getElementById('btn-mercy') as HTMLButtonElement | null;
     this.btnVictory = document.getElementById('btn-victory') as HTMLButtonElement | null;
+
+    // Step 7 Progression Elements
+    this.sealBanner = document.getElementById('seal-awarded-banner');
+    this.sealAwardIcon = document.getElementById('seal-award-icon');
+    this.sealAwardName = document.getElementById('seal-award-name');
+    this.sealAwardUnlock = document.getElementById('seal-award-unlock');
+    this.stagesModal = document.getElementById('modal-stages');
+    this.sealsModal = document.getElementById('modal-seals');
+    this.upgradesModal = document.getElementById('modal-upgrades');
 
     this.attachDomListeners();
   }
 
   private attachDomListeners(): void {
+    // Navigation Modal Triggers
+    document.getElementById('btn-nav-travel')?.addEventListener('click', () => {
+      this.audioManager.playUiClick();
+      this.openStagesModal();
+    });
+
+    document.getElementById('btn-nav-seals')?.addEventListener('click', () => {
+      this.audioManager.playUiClick();
+      this.openSealsModal();
+    });
+
+    document.getElementById('btn-nav-upgrades')?.addEventListener('click', () => {
+      this.audioManager.playUiClick();
+      this.openUpgradesModal();
+    });
+
+    // Modal Close Buttons
+    document.getElementById('btn-close-stages')?.addEventListener('click', () => {
+      if (this.stagesModal) this.stagesModal.style.display = 'none';
+      this.audioManager.playUiClick();
+    });
+
+    document.getElementById('btn-close-seals')?.addEventListener('click', () => {
+      if (this.sealsModal) this.sealsModal.style.display = 'none';
+      this.audioManager.playUiClick();
+    });
+
+    document.getElementById('btn-close-upgrades')?.addEventListener('click', () => {
+      if (this.upgradesModal) this.upgradesModal.style.display = 'none';
+      this.audioManager.playUiClick();
+    });
+
     // Surrender choice decision buttons (PRD Beat 3:30-4:10)
     if (this.btnMercy) {
       this.btnMercy.addEventListener('click', () => {
@@ -452,6 +563,148 @@ export class UIManager {
     // Auto unlock audio on any interaction
     window.addEventListener('pointerdown', () => this.audioManager.unlock(), { once: true });
     window.addEventListener('keydown', () => this.audioManager.unlock(), { once: true });
+  }
+
+  private openStagesModal(): void {
+    if (!this.stagesModal) return;
+    this.renderStages();
+    this.stagesModal.style.display = 'flex';
+  }
+
+  private renderStages(): void {
+    const container = document.getElementById('stages-grid-container');
+    if (!container) return;
+
+    const stages = this.progressionManager.getAllStages();
+    const currentStageId = this.progressionManager.getCurrentStageId();
+
+    container.innerHTML = stages
+      .map((st) => {
+        const isUnlocked = this.progressionManager.isStageUnlocked(st.id);
+        const isCurrent = st.id === currentStageId;
+        return `
+          <div class="stage-card ${isCurrent ? 'current' : ''} ${!isUnlocked ? 'locked' : ''}">
+            <div class="stage-card-header">
+              <span class="stage-icon">${st.sealIcon}</span>
+              <div>
+                <h4 class="stage-title">${st.name}</h4>
+                <span class="stage-region">${st.regionTitle}</span>
+              </div>
+            </div>
+            <p class="stage-theme">${st.environmentTheme}</p>
+            <div class="stage-boss-meta">
+              <strong>Boss:</strong> ${st.bossName} (${st.bossTitle})
+            </div>
+            <div class="stage-card-footer">
+              ${
+                isCurrent
+                  ? '<span class="status-badge current">CURRENT AREA</span>'
+                  : isUnlocked
+                  ? `<button class="btn-travel" data-stage="${st.id}">⚔️ Fast Travel</button>`
+                  : `<span class="status-badge locked">🔒 Requires ${st.requiredSeal === 'SEAL_GARRICK' ? CAMPAIGN_STAGES.grand_arena.sealName : CAMPAIGN_STAGES.rosebridge_keep.sealName}</span>`
+              }
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    container.querySelectorAll<HTMLButtonElement>('.btn-travel').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const stageId = btn.getAttribute('data-stage') as StageId;
+        if (stageId) {
+          const success = this.progressionManager.selectStage(stageId);
+          if (success && this.stagesModal) {
+            this.stagesModal.style.display = 'none';
+          }
+        }
+      });
+    });
+  }
+
+  private openSealsModal(): void {
+    if (!this.sealsModal) return;
+    this.renderSeals();
+    this.sealsModal.style.display = 'flex';
+  }
+
+  private renderSeals(): void {
+    const container = document.getElementById('seals-grid-container');
+    if (!container) return;
+
+    const stages = this.progressionManager.getAllStages();
+
+    container.innerHTML = stages
+      .map((st) => {
+        const isCollected = this.progressionManager.hasOathSeal(st.sealId);
+        return `
+          <div class="seal-card ${isCollected ? 'collected' : 'locked'}">
+            <div class="seal-badge-icon">${st.sealIcon}</div>
+            <h4 class="seal-title">${st.sealName}</h4>
+            <span class="seal-bearer">Bearer: ${st.bossName}</span>
+            <p class="seal-desc">${st.sealDescription}</p>
+            <span class="seal-status ${isCollected ? 'unlocked' : ''}">
+              ${isCollected ? '✨ SEAL CONSECRATED' : '🔒 NOT YET EARNED'}
+            </span>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  private openUpgradesModal(): void {
+    if (!this.upgradesModal) return;
+    this.renderUpgrades();
+    this.upgradesModal.style.display = 'flex';
+  }
+
+  private renderUpgrades(): void {
+    const container = document.getElementById('upgrades-list-container');
+    if (!container) return;
+
+    const branches = this.progressionManager.getUpgrades();
+
+    container.innerHTML = branches
+      .map((b) => {
+        const isMax = b.level >= b.maxLevel;
+        const pips = Array.from({ length: b.maxLevel }, (_, i) =>
+          i < b.level ? '<span class="pip filled"></span>' : '<span class="pip"></span>'
+        ).join('');
+
+        return `
+          <div class="upgrade-row">
+            <div class="upgrade-info">
+              <div class="upgrade-header">
+                <h4 class="upgrade-name">${b.name}</h4>
+                <div class="level-pips">${pips} (Level ${b.level}/${b.maxLevel})</div>
+              </div>
+              <p class="upgrade-desc">${b.description}</p>
+              <span class="upgrade-bonus">${b.bonusText}</span>
+            </div>
+            <div class="upgrade-action">
+              ${
+                isMax
+                  ? '<span class="badge-maxed">MAX LEVEL</span>'
+                  : `<button class="btn-upgrade" data-branch="${b.id}">⚡ Upgrade</button>`
+              }
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    container.querySelectorAll<HTMLButtonElement>('.btn-upgrade').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const branchId = btn.getAttribute('data-branch') as 'swiftPaw' | 'silverClaw' | 'dragonheart';
+        if (branchId) {
+          const success = this.progressionManager.purchaseUpgrade(branchId);
+          if (success) {
+            this.audioManager.playParryClang();
+            this.renderUpgrades();
+          }
+        }
+      });
+    });
   }
 
   private subscribeEvents(): void {
@@ -608,7 +861,7 @@ export class UIManager {
       }
     });
 
-    // Step 6: Boss Health & Poise HUD Updates
+    // Step 6 & 7: Boss Health & Poise HUD Updates
     this.eventBus.on<BossStats>('BOSS_STATS_UPDATED', (stats) => {
       if (this.bossHud) {
         if (stats.isDefeated) {
@@ -616,6 +869,14 @@ export class UIManager {
         } else {
           this.bossHud.classList.remove('hidden');
         }
+      }
+
+      if (this.bossNameEl) {
+        this.bossNameEl.textContent = stats.name;
+      }
+
+      if (this.bossSubtitleEl) {
+        this.bossSubtitleEl.textContent = `${stats.title} • Knightly Duel`;
       }
 
       if (this.bossHpFill) {
@@ -650,17 +911,55 @@ export class UIManager {
     });
 
     // Boss Defeated Surrender Event (PRD Beat 3:30-4:10)
-    this.eventBus.on<{ bossName: string; honorableYield: boolean }>('BOSS_DEFEATED', () => {
-      if (this.surrenderCard) {
-        this.surrenderCard.style.display = 'block';
+    this.eventBus.on<{ bossName: string; title?: string; dialogue?: string; honorableYield: boolean }>(
+      'BOSS_DEFEATED',
+      (payload) => {
+        if (this.surrenderCard) {
+          if (this.surrenderSpeaker) {
+            this.surrenderSpeaker.textContent = `🛡️ ${payload.bossName}`;
+          }
+          if (this.surrenderQuote) {
+            this.surrenderQuote.textContent =
+              payload.dialogue ||
+              `“Yield... you fight with the heart of a lion, little flame. The realm is yours.”`;
+          }
+          this.surrenderCard.style.display = 'block';
+        }
       }
-    });
+    );
 
     // Spare / Victory Choice Decision
     this.eventBus.on<string>('SPARE_BOSS_DECISION', () => {
       if (this.surrenderCard) {
         this.surrenderCard.style.display = 'none';
       }
+    });
+
+    // Oath Seal Awarded Banner (Step 7)
+    this.eventBus.on<{ sealId: string; sealName: string; sealIcon: string; newlyUnlockedStage?: string }>(
+      'OATH_SEAL_AWARDED',
+      (payload) => {
+        if (this.sealBanner && this.sealAwardIcon && this.sealAwardName && this.sealAwardUnlock) {
+          this.sealAwardIcon.textContent = payload.sealIcon;
+          this.sealAwardName.textContent = payload.sealName;
+          this.sealAwardUnlock.textContent = payload.newlyUnlockedStage
+            ? `New Region Unlocked: ${payload.newlyUnlockedStage}!`
+            : 'All Campaign Stages Consecrated!';
+
+          this.sealBanner.style.display = 'flex';
+          this.audioManager.playDragonCall();
+
+          setTimeout(() => {
+            if (this.sealBanner) this.sealBanner.style.display = 'none';
+          }, 4500);
+        }
+      }
+    );
+
+    // Stage Transition Requested
+    this.eventBus.on<StageId>('STAGE_TRANSITION_REQUESTED', () => {
+      if (this.stagesModal) this.stagesModal.style.display = 'none';
+      this.audioManager.playUiClick();
     });
   }
 

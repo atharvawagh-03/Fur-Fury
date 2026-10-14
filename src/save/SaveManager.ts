@@ -49,7 +49,7 @@ export class SaveManager {
   }
 
   public getData(): SaveData {
-    return { ...this.currentData };
+    return JSON.parse(JSON.stringify(this.currentData));
   }
 
   public save(data?: Partial<SaveData>): void {
@@ -60,34 +60,41 @@ export class SaveManager {
         timestamp: Date.now(),
       };
     }
-    try {
-      localStorage.setItem(GameConfig.SAVE_KEY, JSON.stringify(this.currentData));
-    } catch (err) {
-      console.warn('Unable to persist save data to localStorage:', err);
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(GameConfig.SAVE_KEY, JSON.stringify(this.currentData));
+      } catch (err) {
+        console.warn('Unable to persist save data to localStorage:', err);
+      }
     }
   }
 
   public load(): SaveData {
-    try {
-      const raw = localStorage.getItem(GameConfig.SAVE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.version === 1) {
-          return parsed;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(GameConfig.SAVE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.version === 1) {
+            return parsed;
+          }
         }
+      } catch (err) {
+        console.warn('Failed to parse save data from localStorage:', err);
       }
-    } catch (err) {
-      console.warn('Failed to parse save data from localStorage:', err);
     }
-    return { ...InitialSaveData };
+    return JSON.parse(JSON.stringify(InitialSaveData));
   }
 
   public reset(): void {
-    this.currentData = { ...InitialSaveData, timestamp: Date.now() };
-    try {
-      localStorage.removeItem(GameConfig.SAVE_KEY);
-    } catch {
-      // ignore
+    this.currentData = JSON.parse(JSON.stringify(InitialSaveData));
+    this.currentData.timestamp = Date.now();
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.removeItem(GameConfig.SAVE_KEY);
+      } catch {
+        // ignore
+      }
     }
   }
 }

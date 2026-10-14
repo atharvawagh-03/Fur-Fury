@@ -30,7 +30,7 @@ export interface BossStats {
   poise: number;
   maxPoise: number;
   phase: BossPhase;
-  state: GarrickAIState;
+  state: string;
   isStaggered: boolean;
   isDefeated: boolean;
 }
@@ -49,9 +49,15 @@ export interface BossAttackDef {
   isUnblockable?: boolean;
 }
 
-export interface IGarrickBoss extends IDamageable {
+export interface IBossEnemy extends IDamageable {
   getBossStats(): BossStats;
   getRoot(): THREE.Group;
+  getPosition(): THREE.Vector3;
   update(deltaTime: number, playerPos: THREE.Vector3): void;
-  resetBoss(): void;
+  resetBoss?(): void;
+  onAttackPlayerHit?: (damage: number, poiseDamage: number, hitPos: THREE.Vector3) => void;
+  onParriedByPlayer?(): void;
 }
+
+export type IGarrickBoss = IBossEnemy;
+

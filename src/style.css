@@ -1596,6 +1596,373 @@ html, body {
   border-radius: 8px;
 }
 
+/* =====================================================================
+   STEP 8: STORYTELLING, INTERACTIVE DIALOGUE, AND LORE CODEX
+   ===================================================================== */
+
+/* Interaction Prompt Pill */
+.interaction-prompt-pill {
+  position: absolute;
+  top: 68%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(16, 12, 18, 0.88);
+  border: 1.5px solid rgba(255, 215, 0, 0.7);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.35), 0 8px 32px rgba(0, 0, 0, 0.7);
+  padding: 0.5rem 1.1rem;
+  border-radius: 24px;
+  pointer-events: none;
+  z-index: 95;
+  backdrop-filter: blur(8px);
+  animation: promptPillFloat 1.8s ease-in-out infinite;
+}
+
+@keyframes promptPillFloat {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -58%) scale(1.04);
+  }
+}
+
+.interact-key-pill {
+  background: linear-gradient(135deg, #ffd700, #b8860b);
+  color: #1a0808;
+  font-family: var(--font-title);
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.5);
+}
+
+.interact-label {
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Interactive Dialogue Window Overlay */
+.dialogue-deck-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 3.5rem;
+  background: linear-gradient(to top, rgba(10, 6, 8, 0.75) 0%, rgba(10, 6, 8, 0.2) 60%, transparent 100%);
+  z-index: 120;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.dialogue-window {
+  width: min(840px, 92vw);
+  background: linear-gradient(145deg, rgba(24, 15, 20, 0.96), rgba(14, 8, 12, 0.98));
+  border: 1.5px solid rgba(229, 184, 94, 0.7);
+  box-shadow: 0 0 35px rgba(229, 184, 94, 0.25), 0 16px 48px rgba(0, 0, 0, 0.85);
+  border-radius: 14px;
+  padding: 1.5rem 1.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  backdrop-filter: blur(12px);
+  position: relative;
+  cursor: default;
+}
+
+.dialogue-speaker-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(229, 184, 94, 0.25);
+  padding-bottom: 0.8rem;
+}
+
+.dialogue-avatar {
+  font-size: 2.2rem;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1.5px solid rgba(255, 215, 0, 0.5);
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.25);
+}
+
+.dialogue-speaker-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.dialogue-speaker-name {
+  font-family: var(--font-title);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffd700;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+
+.dialogue-speaker-title {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: #d1b89d;
+  font-style: italic;
+}
+
+.dialogue-content-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.dialogue-body-text {
+  font-family: var(--font-body);
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: #f7ede2;
+  margin: 0;
+  min-height: 3.2rem;
+}
+
+.dialogue-choices-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.choice-btn.dialogue-choice {
+  background: linear-gradient(135deg, rgba(45, 26, 35, 0.9), rgba(28, 16, 22, 0.95));
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  color: #fff4d9;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.75rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  transition: all 0.2s ease;
+}
+
+.choice-btn.dialogue-choice:hover {
+  background: linear-gradient(135deg, rgba(72, 38, 54, 0.95), rgba(48, 24, 36, 0.98));
+  border-color: #ffd700;
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+  transform: translateX(4px);
+  color: #ffffff;
+}
+
+.choice-btn.dialogue-choice .choice-num {
+  font-family: var(--font-title);
+  font-weight: 700;
+  color: #ffd700;
+}
+
+.dialogue-advance-hint {
+  font-family: var(--font-title);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(229, 184, 94, 0.8);
+  text-align: right;
+  letter-spacing: 0.05em;
+  animation: advanceHintPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes advanceHintPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Lore Codex Modal Styling */
+.modal-card.codex-card {
+  max-width: 900px;
+  width: 90vw;
+  max-height: 82vh;
+  overflow-y: auto;
+}
+
+.codex-entries-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.lore-entry-card {
+  background: rgba(28, 18, 22, 0.85);
+  border: 1.5px solid rgba(229, 184, 94, 0.3);
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+  display: flex;
+  gap: 1.2rem;
+  align-items: flex-start;
+  transition: all 0.25s ease;
+}
+
+.lore-entry-card.discovered {
+  border-color: rgba(255, 215, 0, 0.6);
+  background: linear-gradient(135deg, rgba(34, 20, 26, 0.9), rgba(24, 14, 18, 0.95));
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.lore-entry-card.discovered:hover {
+  border-color: #ffd700;
+  box-shadow: 0 6px 24px rgba(255, 215, 0, 0.25);
+  transform: translateY(-2px);
+}
+
+.lore-entry-card.locked {
+  opacity: 0.55;
+  filter: grayscale(0.8);
+  border-style: dashed;
+}
+
+.lore-entry-card .lore-icon {
+  font-size: 2.2rem;
+  min-width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 8px;
+}
+
+.lore-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.lore-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.lore-act-tag {
+  font-family: var(--font-title);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ffd700;
+  letter-spacing: 0.08em;
+  background: rgba(255, 215, 0, 0.12);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.lore-speaker-tag {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: #cbb49e;
+  font-style: italic;
+}
+
+.lore-title {
+  font-family: var(--font-title);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.lore-content {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #e6dacb;
+  margin: 0;
+}
+
+.lore-teaser {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: #8f7d71;
+  font-style: italic;
+  margin: 0;
+}
+
+.lore-status {
+  font-family: var(--font-title);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #a08c7c;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Lore Discovered Celebratory Toast */
+.lore-discovered-toast {
+  position: absolute;
+  top: 5rem;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: linear-gradient(135deg, rgba(35, 22, 28, 0.96), rgba(20, 12, 16, 0.98));
+  border: 1.5px solid #ffd700;
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.8);
+  border-radius: 10px;
+  padding: 0.8rem 1.4rem;
+  z-index: 140;
+  animation: loreToastSlideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes loreToastSlideIn {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.lore-discovered-toast .toast-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 0 8px #ffd700);
+}
+
+.lore-discovered-toast .toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.lore-discovered-toast .toast-title {
+  font-family: var(--font-title);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #ffd700;
+  letter-spacing: 0.1em;
+}
+
+.lore-discovered-toast .toast-entry-name {
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+
 
 
 

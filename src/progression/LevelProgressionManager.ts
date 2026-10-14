@@ -6,7 +6,7 @@
 import { SaveManager } from '../save/SaveManager';
 import { EventBus } from '../core/EventBus';
 
-export type StageId = 'grand_arena' | 'rosebridge_keep' | 'bellforge_foundry';
+export type StageId = 'grand_arena' | 'castle_hub' | 'rosebridge_keep' | 'bellforge_foundry';
 
 export interface StageInfo {
   id: StageId;
@@ -43,6 +43,18 @@ export const CAMPAIGN_STAGES: Record<StageId, StageInfo> = {
     sealDescription: 'Awarded by Sir Garrick for unwavering courage at the North Gate.',
     sealIcon: '🛡️',
     environmentTheme: 'Sunlit limestone colosseum, royal banners & fire braziers',
+  },
+  castle_hub: {
+    id: 'castle_hub',
+    name: 'Sanctuary of Veyrholm',
+    regionTitle: 'Castle Hub • Cloister & Archives',
+    bossName: 'Squire Pippin & Loremaster',
+    bossTitle: 'Friendly Sanctuary',
+    sealId: 'SEAL_HUB',
+    sealName: 'Sanctuary Crest',
+    sealDescription: 'The peaceful cloisters where spared knights, squires, and scholars gather.',
+    sealIcon: '🏰',
+    environmentTheme: 'Sunlit limestone cloisters, crystal spring & perched dragon watchtower',
   },
   rosebridge_keep: {
     id: 'rosebridge_keep',

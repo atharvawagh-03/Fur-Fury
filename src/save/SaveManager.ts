@@ -97,4 +97,20 @@ export class SaveManager {
       }
     }
   }
+
+  public getFlag(key: string): boolean {
+    return Boolean(this.currentData.dialogueFlags?.[key]);
+  }
+
+  public setFlag(key: string, value: boolean): void {
+    if (!this.currentData.dialogueFlags) {
+      this.currentData.dialogueFlags = {};
+    }
+    this.currentData.dialogueFlags[key] = value;
+    this.save();
+  }
+
+  public getFlags(): Record<string, boolean> {
+    return { ...(this.currentData.dialogueFlags || {}) };
+  }
 }

@@ -14,6 +14,7 @@ import { BootScene } from '../scenes/BootScene';
 import { ArenaScene } from '../scenes/ArenaScene';
 import { RosebridgeScene } from '../scenes/RosebridgeScene';
 import { BellforgeScene } from '../scenes/BellforgeScene';
+import { HubScene } from '../scenes/HubScene';
 import { EventBus } from './EventBus';
 import { StageId } from '../progression/LevelProgressionManager';
 
@@ -58,10 +59,12 @@ export class Game {
     // Register scenes
     const bootScene = new BootScene();
     const arenaScene = new ArenaScene();
+    const hubScene = new HubScene();
     const rosebridgeScene = new RosebridgeScene();
     const bellforgeScene = new BellforgeScene();
     this.sceneManager.registerScene(bootScene);
     this.sceneManager.registerScene(arenaScene);
+    this.sceneManager.registerScene(hubScene);
     this.sceneManager.registerScene(rosebridgeScene);
     this.sceneManager.registerScene(bellforgeScene);
 
@@ -70,6 +73,8 @@ export class Game {
       console.log(`[Fur & Fury] Fast-travelling to stage: ${stageId}`);
       if (stageId === 'grand_arena') {
         await this.sceneManager.switchScene(arenaScene.id);
+      } else if (stageId === 'castle_hub') {
+        await this.sceneManager.switchScene(hubScene.id);
       } else if (stageId === 'rosebridge_keep') {
         await this.sceneManager.switchScene(rosebridgeScene.id);
       } else if (stageId === 'bellforge_foundry') {

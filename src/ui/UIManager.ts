@@ -14,6 +14,9 @@ import { ActiveCameraMode } from '../scenes/ArenaScene';
 import { CinematicBeat } from '../cinematic/OpeningCinematic';
 import { BossStats } from '../enemy/EnemyTypes';
 import { LevelProgressionManager, StageId, CAMPAIGN_STAGES } from '../progression/LevelProgressionManager';
+import { DialogueManager } from '../narrative/DialogueManager';
+import { LoreCodexManager } from '../narrative/LoreCodexManager';
+import { DialogueNode, LoreEntry } from '../narrative/DialogueTypes';
 
 export interface CinematicStatePayload {
   active: boolean;
@@ -29,6 +32,8 @@ export class UIManager {
   private eventBus = EventBus.getInstance();
   private audioManager: AudioManager;
   private progressionManager = LevelProgressionManager.getInstance();
+  private dialogueManager = DialogueManager.getInstance();
+  private loreManager = LoreCodexManager.getInstance();
 
   // Real-time elements
   private hpBarFill: HTMLElement | null = null;
@@ -63,6 +68,20 @@ export class UIManager {
   private stagesModal: HTMLElement | null = null;
   private sealsModal: HTMLElement | null = null;
   private upgradesModal: HTMLElement | null = null;
+
+  // Step 8 Dialogue, Proximity Prompts & Lore Codex
+  private interactionPromptPill: HTMLElement | null = null;
+  private interactionPromptLabel: HTMLElement | null = null;
+  private dialogueDeckOverlay: HTMLElement | null = null;
+  private dialogueAvatar: HTMLElement | null = null;
+  private dialogueSpeakerName: HTMLElement | null = null;
+  private dialogueSpeakerTitle: HTMLElement | null = null;
+  private dialogueBodyText: HTMLElement | null = null;
+  private dialogueChoicesContainer: HTMLElement | null = null;
+  private dialogueAdvanceHint: HTMLElement | null = null;
+  private codexModal: HTMLElement | null = null;
+  private loreToast: HTMLElement | null = null;
+  private loreToastName: HTMLElement | null = null;
 
   // Cinematic UI elements
   private cinematicContainer: HTMLElement | null = null;
@@ -132,13 +151,14 @@ export class UIManager {
             <button class="nav-btn" id="btn-nav-travel">🗺️ Travel</button>
             <button class="nav-btn" id="btn-nav-seals">🛡️ Oath Seals</button>
             <button class="nav-btn" id="btn-nav-upgrades">⚡ Skill Tree</button>
+            <button class="nav-btn" id="btn-nav-codex">📖 Codex</button>
           </div>
         </header>
 
         <!-- Milestone Badge -->
         <div class="milestone-badge">
-          <span class="pill">STEP 7 ACTIVE</span>
-          <span class="milestone-desc">Level Progression & Boss Battles</span>
+          <span class="pill">STEP 8 ACTIVE</span>
+          <span class="milestone-desc">Storytelling, Dialogue & Interactive Systems</span>
         </div>
 
         <!-- Oath Seal Celebratory Banner -->
@@ -219,6 +239,51 @@ export class UIManager {
             </div>
             <p class="modal-desc">Enhance Lady Anuki’s agility, blade mastery, and dragon vitality.</p>
             <div class="upgrades-list" id="upgrades-list-container"></div>
+          </div>
+        </div>
+
+        <!-- Step 8 Lore Codex / Veyrholm Chronicles Modal -->
+        <div class="progression-modal" id="modal-codex" style="display: none;">
+          <div class="modal-card codex-card">
+            <div class="modal-header">
+              <h3>📖 The Veyrholm Chronicles & Lore Codex</h3>
+              <button class="modal-close-btn" id="btn-close-codex">✕</button>
+            </div>
+            <p class="modal-desc">Chronicles of the Rite of Eight, the Siphon Conduit, and the Ancient Dragon Bond.</p>
+            <div class="codex-entries-grid" id="codex-entries-grid"></div>
+          </div>
+        </div>
+
+        <!-- Step 8 Interaction Prompt Pill -->
+        <div class="interaction-prompt-pill" id="interaction-prompt-pill" style="display: none;">
+          <span class="interact-key-pill">[E]</span>
+          <span class="interact-label" id="interaction-prompt-label">Talk</span>
+        </div>
+
+        <!-- Step 8 Interactive Branching Dialogue Window -->
+        <div class="dialogue-deck-overlay" id="dialogue-deck-overlay" style="display: none;">
+          <div class="dialogue-window">
+            <div class="dialogue-speaker-card">
+              <div class="dialogue-avatar" id="dialogue-avatar">📜</div>
+              <div class="dialogue-speaker-meta">
+                <span class="dialogue-speaker-name" id="dialogue-speaker-name">Speaker</span>
+                <span class="dialogue-speaker-title" id="dialogue-speaker-title">Title</span>
+              </div>
+            </div>
+            <div class="dialogue-content-box">
+              <p class="dialogue-body-text" id="dialogue-body-text"></p>
+              <div class="dialogue-choices-container" id="dialogue-choices-container"></div>
+              <div class="dialogue-advance-hint" id="dialogue-advance-hint">Press [Space] / [Enter] or Click to Continue ▾</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 8 Celebratory Lore Discovered Toast -->
+        <div class="lore-discovered-toast" id="lore-discovered-toast" style="display: none;">
+          <span class="toast-icon">📜</span>
+          <div class="toast-content">
+            <span class="toast-title">CHRONICLE RECORDED</span>
+            <span class="toast-entry-name" id="lore-toast-name">Lore Title</span>
           </div>
         </div>
 
@@ -388,6 +453,20 @@ export class UIManager {
     this.sealsModal = document.getElementById('modal-seals');
     this.upgradesModal = document.getElementById('modal-upgrades');
 
+    // Step 8 Dialogue, Interaction & Codex Elements
+    this.interactionPromptPill = document.getElementById('interaction-prompt-pill');
+    this.interactionPromptLabel = document.getElementById('interaction-prompt-label');
+    this.dialogueDeckOverlay = document.getElementById('dialogue-deck-overlay');
+    this.dialogueAvatar = document.getElementById('dialogue-avatar');
+    this.dialogueSpeakerName = document.getElementById('dialogue-speaker-name');
+    this.dialogueSpeakerTitle = document.getElementById('dialogue-speaker-title');
+    this.dialogueBodyText = document.getElementById('dialogue-body-text');
+    this.dialogueChoicesContainer = document.getElementById('dialogue-choices-container');
+    this.dialogueAdvanceHint = document.getElementById('dialogue-advance-hint');
+    this.codexModal = document.getElementById('modal-codex');
+    this.loreToast = document.getElementById('lore-discovered-toast');
+    this.loreToastName = document.getElementById('lore-toast-name');
+
     this.attachDomListeners();
   }
 
@@ -408,6 +487,11 @@ export class UIManager {
       this.openUpgradesModal();
     });
 
+    document.getElementById('btn-nav-codex')?.addEventListener('click', () => {
+      this.audioManager.playUiClick();
+      this.openCodexModal();
+    });
+
     // Modal Close Buttons
     document.getElementById('btn-close-stages')?.addEventListener('click', () => {
       if (this.stagesModal) this.stagesModal.style.display = 'none';
@@ -422,6 +506,31 @@ export class UIManager {
     document.getElementById('btn-close-upgrades')?.addEventListener('click', () => {
       if (this.upgradesModal) this.upgradesModal.style.display = 'none';
       this.audioManager.playUiClick();
+    });
+
+    document.getElementById('btn-close-codex')?.addEventListener('click', () => {
+      if (this.codexModal) this.codexModal.style.display = 'none';
+      this.audioManager.playUiClick();
+    });
+
+    // Step 8 Dialogue overlay advance and keyboard listeners
+    this.dialogueDeckOverlay?.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('.choice-btn')) return;
+      this.dialogueManager.advance();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (this.dialogueManager.isActive()) {
+        if (e.code === 'Enter' || e.code === 'Space') {
+          const node = this.dialogueManager.getCurrentNode();
+          if (!node?.choices || node.choices.length === 0) {
+            e.preventDefault();
+            this.dialogueManager.advance();
+          }
+        } else if (e.code === 'Escape') {
+          this.dialogueManager.closeDialogue();
+        }
+      }
     });
 
     // Surrender choice decision buttons (PRD Beat 3:30-4:10)
@@ -961,6 +1070,120 @@ export class UIManager {
       if (this.stagesModal) this.stagesModal.style.display = 'none';
       this.audioManager.playUiClick();
     });
+
+    // Step 8 Interaction Prompt show/hide
+    this.eventBus.on<{ label: string; icon?: string }>('INTERACTION_PROMPT_SHOW', (payload) => {
+      if (this.interactionPromptPill && this.interactionPromptLabel) {
+        this.interactionPromptLabel.textContent = `${payload.icon ? payload.icon + ' ' : ''}${payload.label}`;
+        this.interactionPromptPill.style.display = 'flex';
+      }
+    });
+
+    this.eventBus.on('INTERACTION_PROMPT_HIDE', () => {
+      if (this.interactionPromptPill) {
+        this.interactionPromptPill.style.display = 'none';
+      }
+    });
+
+    // Step 8 Dialogue State
+    this.eventBus.on<{ treeId: string; node: DialogueNode }>('DIALOGUE_STARTED', (payload) => {
+      if (this.dialogueDeckOverlay) {
+        this.dialogueDeckOverlay.style.display = 'flex';
+      }
+      this.displayDialogueNode(payload.node);
+    });
+
+    this.eventBus.on<DialogueNode>('DIALOGUE_NODE_CHANGED', (node) => {
+      this.displayDialogueNode(node);
+    });
+
+    this.eventBus.on('DIALOGUE_CLOSED', () => {
+      if (this.dialogueDeckOverlay) {
+        this.dialogueDeckOverlay.style.display = 'none';
+      }
+    });
+
+    // Step 8 Lore Discovered Toast
+    this.eventBus.on<LoreEntry>('LORE_DISCOVERED', (entry) => {
+      if (this.loreToast && this.loreToastName) {
+        this.loreToastName.textContent = `${entry.icon} ${entry.title}`;
+        this.loreToast.style.display = 'flex';
+        this.audioManager.playLoreDiscoverSound();
+        setTimeout(() => {
+          if (this.loreToast) this.loreToast.style.display = 'none';
+        }, 5000);
+      }
+    });
+  }
+
+  private displayDialogueNode(node: DialogueNode): void {
+    if (this.dialogueAvatar) this.dialogueAvatar.textContent = node.speakerAvatar || '📜';
+    if (this.dialogueSpeakerName) this.dialogueSpeakerName.textContent = node.speaker;
+    if (this.dialogueSpeakerTitle) this.dialogueSpeakerTitle.textContent = node.speakerTitle || '';
+    if (this.dialogueBodyText) this.dialogueBodyText.textContent = `“${node.text}”`;
+
+    if (this.dialogueChoicesContainer && this.dialogueAdvanceHint) {
+      this.dialogueChoicesContainer.innerHTML = '';
+      if (node.choices && node.choices.length > 0) {
+        this.dialogueAdvanceHint.style.display = 'none';
+        node.choices.forEach((choice, index) => {
+          const btn = document.createElement('button');
+          btn.className = 'choice-btn dialogue-choice';
+          btn.innerHTML = `<span class="choice-num">[${index + 1}]</span> ${choice.label}`;
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.audioManager.playUiClick();
+            this.dialogueManager.selectChoice(choice);
+          });
+          this.dialogueChoicesContainer?.appendChild(btn);
+        });
+      } else {
+        this.dialogueAdvanceHint.style.display = 'block';
+      }
+    }
+  }
+
+  private openCodexModal(): void {
+    if (!this.codexModal) return;
+    this.renderCodex();
+    this.codexModal.style.display = 'flex';
+  }
+
+  private renderCodex(): void {
+    const container = document.getElementById('codex-entries-grid');
+    if (!container) return;
+
+    const entries = this.loreManager.getAllEntries();
+    container.innerHTML = entries
+      .map((entry) => {
+        if (!entry.isUnlocked) {
+          return `
+            <div class="lore-entry-card locked">
+              <div class="lore-icon">🔒</div>
+              <div class="lore-details">
+                <span class="lore-status">Undiscovered Chronicle</span>
+                <span class="lore-title">???</span>
+                <span class="lore-teaser">Explore Veyrholm's sanctuaries and shrines to uncover this ancient record.</span>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="lore-entry-card discovered">
+            <div class="lore-icon">${entry.icon}</div>
+            <div class="lore-details">
+              <div class="lore-card-header">
+                <span class="lore-act-tag">${entry.category.toUpperCase()} • ${entry.discoveredLocation}</span>
+                <span class="lore-speaker-tag">Recorded Chronicle</span>
+              </div>
+              <h4 class="lore-title">${entry.title}</h4>
+              <p class="lore-content">${entry.body}</p>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
   }
 
   public update(): void {

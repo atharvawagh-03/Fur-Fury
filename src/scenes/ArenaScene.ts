@@ -20,6 +20,8 @@ import { EventBus } from '../core/EventBus';
 
 import { DamageableDummy, DamageableCrate } from '../combat/DamageableProp';
 import { PropFactory } from '../world/PropFactory';
+import { GarrickModel } from '../enemy/GarrickModel';
+import { GarrickAI } from '../enemy/GarrickAI';
 
 export type ActiveCameraMode = 'THIRD_PERSON' | 'CINEMATIC';
 
@@ -40,7 +42,10 @@ export class ArenaScene implements IScene {
   private cinematic!: OpeningCinematic;
 
   // Step 5 Combat Subsystem & Damageable Targets
-  private damageableTargets: (DamageableDummy | DamageableCrate)[] = [];
+  private damageableTargets: (DamageableDummy | DamageableCrate | GarrickAI)[] = [];
+
+  // Step 6 Human Knight Boss (Sir Garrick Ironjaw)
+  private garrick!: GarrickAI;
 
   private cameraMode: ActiveCameraMode = 'THIRD_PERSON';
   private eventBus = EventBus.getInstance();
@@ -59,8 +64,12 @@ export class ArenaScene implements IScene {
     return this.anuki;
   }
 
-  public getDamageableTargets(): (DamageableDummy | DamageableCrate)[] {
+  public getDamageableTargets(): (DamageableDummy | DamageableCrate | GarrickAI)[] {
     return this.damageableTargets;
+  }
+
+  public getGarrick(): GarrickAI {
+    return this.garrick;
   }
 
   public getRhazakar(): RhazakarModel {
@@ -225,6 +234,39 @@ export class ArenaScene implements IScene {
         combat.registerTarget(crate);
       }
     }
+
+    // 3. Step 6: Spawn Human Knight Boss — Sir Garrick Ironjaw at North Gate
+    const garrickModel = new GarrickModel();
+    this.scene.add(garrickModel.getRoot());
+    garrickModel.getRoot().position.set(0, 0, -8.5);
+    garrickModel.getRoot().rotation.y = 0; // Facing south toward arena center and Anuki
+
+    this.garrick = new GarrickAI(garrickModel, this.context.audioManager, this.context.cameraManager);
+    this.damageableTargets.push(this.garrick);
+    combat.registerTarget(this.garrick);
+
+    // Connect Garrick's attacks against Anuki's combat defenses
+    this.garrick.onAttackPlayerHit = (damage, poiseDamage, hitPos) => {
+      const stats = this.anuki.getStats();
+      const defenseRes = this.anuki.getCombatSystem().handleIncomingAttack(
+        damage,
+        poiseDamage,
+        stats.stamina,
+        hitPos
+      );
+
+      if (defenseRes.deflected) {
+        // Player timed a parry! Deflect and stagger Garrick!
+        this.garrick.onParriedByPlayer();
+      } else if (defenseRes.blocked) {
+        // Player held guard block
+        this.anuki.drainStamina(defenseRes.staminaCost);
+        this.anuki.takeDamage(defenseRes.damageTaken);
+      } else {
+        // Unmitigated hit
+        this.anuki.takeDamage(defenseRes.damageTaken);
+      }
+    };
   }
 
   public playOpeningCinematic(): void {
@@ -380,6 +422,20 @@ export class ArenaScene implements IScene {
     for (const target of this.damageableTargets) {
       if (target instanceof DamageableDummy) {
         target.update(deltaTime);
+      }
+    }
+
+    // Step 6: Update Sir Garrick Ironjaw Boss AI and combat interactions
+    if (this.garrick) {
+      this.garrick.update(deltaTime, this.anuki.getPosition());
+
+      // Contextual keys for surrender choice (PRD Beat 3:30-4:10)
+      if (!this.garrick.isAlive()) {
+        if (this.context.inputManager.isActionJustPressed('interact')) {
+          this.eventBus.emit('SPARE_BOSS_DECISION', 'MERCY');
+        } else if (this.context.inputManager.isActionJustPressed('lightAttack')) {
+          this.eventBus.emit('SPARE_BOSS_DECISION', 'VICTORY');
+        }
       }
     }
 

@@ -881,4 +881,233 @@ html, body {
   box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
 }
 
+/* ==================================================
+   STEP 6: BOSS HEALTH & POISE HUD (SIR GARRICK IRONJAW)
+   ================================================== */
+.boss-health-hud {
+  position: absolute;
+  top: 4.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, 92vw);
+  background: linear-gradient(180deg, rgba(20, 16, 22, 0.95), rgba(12, 10, 14, 0.98));
+  border: 1px solid rgba(229, 184, 94, 0.55);
+  border-radius: 10px;
+  padding: 0.65rem 1.4rem 0.75rem;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(229, 184, 94, 0.08);
+  backdrop-filter: blur(12px);
+  z-index: 25;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.boss-health-hud.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+.boss-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.boss-icon {
+  font-size: 1.25rem;
+  margin-right: 0.6rem;
+  filter: drop-shadow(0 0 8px rgba(229, 184, 94, 0.6));
+}
+
+.boss-title-block {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.boss-name {
+  font-family: var(--font-title);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #fff2db;
+  text-shadow: 0 0 10px rgba(229, 184, 94, 0.6);
+}
+
+.boss-subtitle {
+  font-size: 0.68rem;
+  color: #c9b08d;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.boss-phase-badge {
+  font-family: var(--font-title);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(229, 184, 94, 0.18);
+  border: 1px solid rgba(229, 184, 94, 0.5);
+  color: #f7dfa5;
+}
+
+.boss-phase-badge.phase-2 {
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.35), rgba(192, 57, 43, 0.5));
+  border-color: #ff5533;
+  color: #ffddcc;
+  box-shadow: 0 0 14px rgba(231, 76, 60, 0.6);
+  animation: phase2Pulse 1.2s infinite alternate;
+}
+
+@keyframes phase2Pulse {
+  0% { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1.06); filter: brightness(1.35); }
+}
+
+.boss-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  margin-bottom: 0.3rem;
+}
+
+.boss-hp-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(30, 20, 25, 0.85);
+  border: 1px solid rgba(229, 184, 94, 0.35);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+.boss-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #961b1b, #e74c3c, #ff7675);
+  box-shadow: 0 0 12px rgba(231, 76, 60, 0.8);
+  transition: width 0.18s ease-out;
+}
+
+.boss-poise-bar {
+  width: 100%;
+  height: 5px;
+  background: rgba(25, 22, 18, 0.8);
+  border: 1px solid rgba(243, 156, 18, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.boss-poise-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d35400, #f39c12, #f1c40f);
+  box-shadow: 0 0 8px rgba(243, 156, 18, 0.6);
+  transition: width 0.15s ease-out;
+}
+
+.boss-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.68rem;
+  color: #baa284;
+}
+
+.boss-hp-text {
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.boss-state-text {
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: #dfcaa8;
+}
+
+/* Narrative Surrender & Spare Dialogue Modal */
+.surrender-dialogue-card {
+  position: absolute;
+  bottom: 6.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(680px, 92vw);
+  background: linear-gradient(180deg, rgba(20, 14, 24, 0.97), rgba(8, 6, 10, 0.99));
+  border: 2px solid rgba(255, 215, 0, 0.8);
+  border-radius: 14px;
+  padding: 1.2rem 1.8rem;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.9), 0 0 32px rgba(255, 215, 0, 0.25);
+  backdrop-filter: blur(20px);
+  z-index: 45;
+  text-align: center;
+  animation: promptPulse 2.0s infinite alternate;
+}
+
+.surrender-dialogue-card .speaker-tag {
+  font-family: var(--font-title);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ffda73;
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.1em;
+}
+
+.surrender-dialogue-card .dialogue-quote {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  font-style: italic;
+  color: #fdf5e6;
+  margin: 0.5rem 0 1.2rem;
+  line-height: 1.5;
+}
+
+.narrative-choice-btns {
+  display: flex;
+  justify-content: center;
+  gap: 1.2rem;
+}
+
+.choice-btn {
+  font-family: var(--font-title);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.choice-btn.mercy-btn {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.3), rgba(26, 110, 60, 0.5));
+  border: 1px solid #2ecc71;
+  color: #a8f0c2;
+  box-shadow: 0 0 14px rgba(46, 204, 113, 0.4);
+}
+
+.choice-btn.mercy-btn:hover {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.55), rgba(26, 110, 60, 0.75));
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px rgba(46, 204, 113, 0.7);
+}
+
+.choice-btn.victory-btn {
+  background: linear-gradient(135deg, rgba(230, 126, 34, 0.3), rgba(160, 80, 20, 0.5));
+  border: 1px solid #e67e22;
+  color: #f8c291;
+  box-shadow: 0 0 14px rgba(230, 126, 34, 0.4);
+}
+
+.choice-btn.victory-btn:hover {
+  background: linear-gradient(135deg, rgba(230, 126, 34, 0.55), rgba(160, 80, 20, 0.75));
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px rgba(230, 126, 34, 0.7);
+}
+
+
 

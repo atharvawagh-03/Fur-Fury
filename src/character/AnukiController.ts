@@ -37,6 +37,7 @@ export class AnukiController {
   private animator: AnukiAnimator;
   private effects: AnukiEffects;
   private combatSystem: CombatSystem;
+  private cameraManager: CameraManager;
   private physicsWorld: PhysicsWorld;
   private inputManager: InputManager;
   private audioManager: AudioManager;
@@ -104,6 +105,7 @@ export class AnukiController {
 
     // 3. Initialize Step 5 Core Combat Subsystem
     const cm = cameraManager || new CameraManager();
+    this.cameraManager = cm;
     const vfx = new CombatVFX(scene);
     this.combatSystem = new CombatSystem(this.model, this.animator, vfx, this.audioManager, cm);
 
@@ -175,6 +177,23 @@ export class AnukiController {
       maxElixirs: cs.maxElixirs,
       riposteActive: cs.riposteActive,
     };
+  }
+
+  public takeDamage(amount: number): void {
+    if (this.isDodging && this.dodgeTimer < 0.35) return; // Invulnerability frames (i-frames)
+    this.health = Math.max(0, this.health - amount);
+    this.effects.emitBurst(this.model.getRoot().position, 8);
+    this.cameraManager.addShake(0.28);
+    this.audioManager.playHitSound(180);
+
+    if (this.health <= 0) {
+      // Defeated recovery - restore for vertical slice duel flow
+      this.health = this.maxHealth;
+    }
+  }
+
+  public drainStamina(amount: number): void {
+    this.stamina = Math.max(0, this.stamina - amount);
   }
 
   public jump(): void {

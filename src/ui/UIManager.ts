@@ -12,6 +12,7 @@ import { AudioManager } from '../audio/AudioManager';
 import { PlayerStats } from '../character/AnukiController';
 import { ActiveCameraMode } from '../scenes/ArenaScene';
 import { CinematicBeat } from '../cinematic/OpeningCinematic';
+import { BossStats } from '../enemy/EnemyTypes';
 
 export interface CinematicStatePayload {
   active: boolean;
@@ -36,6 +37,17 @@ export class UIManager {
   private heroSpeedText: HTMLElement | null = null;
   private lockOnBtn: HTMLElement | null = null;
   private heroCamBtn: HTMLElement | null = null;
+
+  // Step 6 Boss HUD & Surrender Dialogue elements
+  private bossHud: HTMLElement | null = null;
+  private bossHpFill: HTMLElement | null = null;
+  private bossPoiseFill: HTMLElement | null = null;
+  private bossHpText: HTMLElement | null = null;
+  private bossStateText: HTMLElement | null = null;
+  private bossPhaseBadge: HTMLElement | null = null;
+  private surrenderCard: HTMLElement | null = null;
+  private btnMercy: HTMLButtonElement | null = null;
+  private btnVictory: HTMLButtonElement | null = null;
 
   // Cinematic UI elements
   private cinematicContainer: HTMLElement | null = null;
@@ -105,8 +117,43 @@ export class UIManager {
 
         <!-- Milestone Badge -->
         <div class="milestone-badge">
-          <span class="pill">STEP 5 ACTIVE</span>
-          <span class="milestone-desc">Sword Combat & Player Abilities</span>
+          <span class="pill">STEP 6 ACTIVE</span>
+          <span class="milestone-desc">Human Knight Enemies & Combat AI</span>
+        </div>
+
+        <!-- Boss Health & Poise HUD (Sir Garrick Ironjaw) -->
+        <div class="boss-health-hud" id="boss-hud">
+          <div class="boss-header-row">
+            <span class="boss-icon">⚔️</span>
+            <div class="boss-title-block">
+              <span class="boss-name" id="boss-name">SIR GARRICK IRONJAW</span>
+              <span class="boss-subtitle" id="boss-subtitle">The Gatekeeper • Prologue Champion</span>
+            </div>
+            <span class="boss-phase-badge" id="boss-phase-badge">PHASE 1</span>
+          </div>
+
+          <div class="boss-bar-container">
+            <div class="boss-hp-bar">
+              <div class="boss-hp-fill" id="boss-hp-fill" style="width: 100%;"></div>
+            </div>
+            <div class="boss-poise-bar">
+              <div class="boss-poise-fill" id="boss-poise-fill" style="width: 100%;"></div>
+            </div>
+          </div>
+          <div class="boss-meta-row">
+            <span class="boss-hp-text" id="boss-hp-text">350 / 350 HP</span>
+            <span class="boss-state-text" id="boss-state-text">STANCE: GUARD</span>
+          </div>
+        </div>
+
+        <!-- Surrender & Spare Dialogue Modal per PRD Beat 3:30-4:10 -->
+        <div class="surrender-dialogue-card" id="surrender-card" style="display: none;">
+          <div class="speaker-tag">🛡️ Sir Garrick Ironjaw</div>
+          <p class="dialogue-quote">“Yield... you fight with the heart of a lion, little flame. The North Gate is yours.”</p>
+          <div class="narrative-choice-btns">
+            <button class="choice-btn mercy-btn" id="btn-mercy">🐾 [E] Offer Paw in Mercy</button>
+            <button class="choice-btn victory-btn" id="btn-victory">🗡️ [J] Raise Blade in Victory</button>
+          </div>
         </div>
 
         <!-- Dynamic Floating Combo Counter -->
@@ -251,10 +298,36 @@ export class UIManager {
     this.skipCinematicBtn = document.getElementById('btn-skip-cinematic');
     this.playCinematicBtn = document.getElementById('btn-play-cinematic');
 
+    // Step 6 Boss HUD & Surrender Choice Elements
+    this.bossHud = document.getElementById('boss-hud');
+    this.bossHpFill = document.getElementById('boss-hp-fill');
+    this.bossPoiseFill = document.getElementById('boss-poise-fill');
+    this.bossHpText = document.getElementById('boss-hp-text');
+    this.bossStateText = document.getElementById('boss-state-text');
+    this.bossPhaseBadge = document.getElementById('boss-phase-badge');
+    this.surrenderCard = document.getElementById('surrender-card');
+    this.btnMercy = document.getElementById('btn-mercy') as HTMLButtonElement | null;
+    this.btnVictory = document.getElementById('btn-victory') as HTMLButtonElement | null;
+
     this.attachDomListeners();
   }
 
   private attachDomListeners(): void {
+    // Surrender choice decision buttons (PRD Beat 3:30-4:10)
+    if (this.btnMercy) {
+      this.btnMercy.addEventListener('click', () => {
+        this.audioManager.unlock();
+        this.eventBus.emit('SPARE_BOSS_DECISION', 'MERCY');
+      });
+    }
+
+    if (this.btnVictory) {
+      this.btnVictory.addEventListener('click', () => {
+        this.audioManager.unlock();
+        this.eventBus.emit('SPARE_BOSS_DECISION', 'VICTORY');
+      });
+    }
+
     // Play Opening Cinematic
     if (this.playCinematicBtn) {
       this.playCinematicBtn.addEventListener('click', () => {
@@ -532,6 +605,61 @@ export class UIManager {
           label.textContent = 'Dragon Call (T/X)';
           btnDragon.classList.remove('disabled');
         }
+      }
+    });
+
+    // Step 6: Boss Health & Poise HUD Updates
+    this.eventBus.on<BossStats>('BOSS_STATS_UPDATED', (stats) => {
+      if (this.bossHud) {
+        if (stats.isDefeated) {
+          this.bossHud.classList.add('hidden');
+        } else {
+          this.bossHud.classList.remove('hidden');
+        }
+      }
+
+      if (this.bossHpFill) {
+        const hpPct = Math.max(0, Math.min(100, (stats.health / stats.maxHealth) * 100));
+        this.bossHpFill.style.width = `${hpPct}%`;
+      }
+
+      if (this.bossPoiseFill) {
+        const poisePct = Math.max(0, Math.min(100, (stats.poise / stats.maxPoise) * 100));
+        this.bossPoiseFill.style.width = `${poisePct}%`;
+      }
+
+      if (this.bossHpText) {
+        this.bossHpText.textContent = `${Math.round(stats.health)} / ${stats.maxHealth} HP`;
+      }
+
+      if (this.bossStateText) {
+        this.bossStateText.textContent = stats.isStaggered
+          ? 'STANCE: STAGGERED (PUNISH!)'
+          : `STANCE: ${stats.state.replace('ATTACK_', '').replace('TELEGRAPH_', 'WINDUP ')}`;
+      }
+
+      if (this.bossPhaseBadge) {
+        if (stats.phase === 2) {
+          this.bossPhaseBadge.textContent = 'PHASE 2 (ENRAGED)';
+          this.bossPhaseBadge.classList.add('phase-2');
+        } else {
+          this.bossPhaseBadge.textContent = 'PHASE 1';
+          this.bossPhaseBadge.classList.remove('phase-2');
+        }
+      }
+    });
+
+    // Boss Defeated Surrender Event (PRD Beat 3:30-4:10)
+    this.eventBus.on<{ bossName: string; honorableYield: boolean }>('BOSS_DEFEATED', () => {
+      if (this.surrenderCard) {
+        this.surrenderCard.style.display = 'block';
+      }
+    });
+
+    // Spare / Victory Choice Decision
+    this.eventBus.on<string>('SPARE_BOSS_DECISION', () => {
+      if (this.surrenderCard) {
+        this.surrenderCard.style.display = 'none';
       }
     });
   }

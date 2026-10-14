@@ -74,6 +74,20 @@ export class AnukiModel {
     return this.rig;
   }
 
+  public getSwordTipWorldPosition(out: THREE.Vector3): void {
+    if (this.rig && this.rig.swordMesh) {
+      const localTip = new THREE.Vector3(0, 0.72, 0);
+      out.copy(localTip).applyMatrix4(this.rig.swordMesh.matrixWorld);
+    }
+  }
+
+  public getSwordBaseWorldPosition(out: THREE.Vector3): void {
+    if (this.rig && this.rig.swordMesh) {
+      const localBase = new THREE.Vector3(0, 0.05, 0);
+      out.copy(localBase).applyMatrix4(this.rig.swordMesh.matrixWorld);
+    }
+  }
+
   private buildCharacter(): void {
     const faceMat = AnukiMaterials.createPhotorealisticFaceMaterial();
     const furMat = AnukiMaterials.createFurPhotoMaterial();

@@ -12,6 +12,9 @@ import { AnukiEffects } from './AnukiEffects';
 import { PhysicsWorld } from '../physics/PhysicsWorld';
 import { InputManager } from '../input/InputManager';
 import { AudioManager } from '../audio/AudioManager';
+import { CameraManager } from '../camera/CameraManager';
+import { CombatSystem } from '../combat/CombatSystem';
+import { CombatVFX } from '../combat/CombatVFX';
 import { EventBus } from '../core/EventBus';
 
 export interface PlayerStats {
@@ -22,12 +25,18 @@ export interface PlayerStats {
   isInvulnerable: boolean;
   state: LocomotionState;
   speed: number;
+  comboCount?: number;
+  comboMultiplier?: number;
+  elixirCount?: number;
+  maxElixirs?: number;
+  riposteActive?: boolean;
 }
 
 export class AnukiController {
   private model: AnukiModel;
   private animator: AnukiAnimator;
   private effects: AnukiEffects;
+  private combatSystem: CombatSystem;
   private physicsWorld: PhysicsWorld;
   private inputManager: InputManager;
   private audioManager: AudioManager;
@@ -45,7 +54,7 @@ export class AnukiController {
   private maxStamina: number = 100;
   private staminaRegenRate: number = 28; // Stamina/sec
   private staminaSprintCost: number = 16; // Stamina/sec
-  private staminaDodgeCost: number = 22; // Stamina/dodge
+  private staminaDodgeCost: number = 18; // Stamina/dodge
 
   // Movement parameters
   private walkSpeed: number = 3.6;   // m/s
@@ -63,11 +72,6 @@ export class AnukiController {
   private dodgeDirection: THREE.Vector3 = new THREE.Vector3();
   private dodgeSpeed: number = 8.8;
 
-  // Attack / Action state
-  private isAttacking: boolean = false;
-  private attackTimer: number = 0;
-  private attackDuration: number = 0.4;
-
   // Footstep audio pacing
   private footstepTimer: number = 0;
 
@@ -83,7 +87,8 @@ export class AnukiController {
     audioManager: AudioManager,
     spawnX: number = 0,
     spawnY: number = 0.5,
-    spawnZ: number = 0
+    spawnZ: number = 0,
+    cameraManager?: CameraManager
   ) {
     this.physicsWorld = physicsWorld;
     this.inputManager = inputManager;
@@ -97,7 +102,12 @@ export class AnukiController {
     this.animator = new AnukiAnimator(this.model.getRig());
     this.effects = new AnukiEffects(scene);
 
-    // 3. Initialize Rapier 3D Kinematic Controller & Capsule
+    // 3. Initialize Step 5 Core Combat Subsystem
+    const cm = cameraManager || new CameraManager();
+    const vfx = new CombatVFX(scene);
+    this.combatSystem = new CombatSystem(this.model, this.animator, vfx, this.audioManager, cm);
+
+    // 4. Initialize Rapier 3D Kinematic Controller & Capsule
     this.initPhysics(spawnX, spawnY, spawnZ);
   }
 
@@ -145,7 +155,12 @@ export class AnukiController {
     this.model.getRoot().rotation.y = yaw;
   }
 
+  public getCombatSystem(): CombatSystem {
+    return this.combatSystem;
+  }
+
   public getStats(): PlayerStats {
+    const cs = this.combatSystem.getStats();
     return {
       health: this.health,
       maxHealth: this.maxHealth,
@@ -154,11 +169,16 @@ export class AnukiController {
       isInvulnerable: this.isDodging && this.dodgeTimer < 0.35,
       state: this.animator.getState(),
       speed: this.currentSpeed,
+      comboCount: cs.comboCount,
+      comboMultiplier: cs.comboMultiplier,
+      elixirCount: cs.elixirCount,
+      maxElixirs: cs.maxElixirs,
+      riposteActive: cs.riposteActive,
     };
   }
 
   public jump(): void {
-    if (this.isGrounded && !this.isDodging) {
+    if (this.isGrounded && !this.isDodging && !this.combatSystem.isAttacking()) {
       this.verticalVelocity = this.jumpForce;
       this.isGrounded = false;
       this.animator.setState('JUMP');
@@ -168,28 +188,34 @@ export class AnukiController {
   }
 
   /**
-   * Updates player logic, input parsing, animations, and stats
+   * Updates player logic, input parsing, animations, combat, and stats
    */
-  public update(deltaTime: number, cameraYaw: number): void {
+  public update(deltaTime: number, cameraYaw: number, camera?: THREE.Camera): void {
     // 1. Update active timers
     this.updateTimers(deltaTime);
 
-    // 2. Handle stamina regeneration
-    this.updateStamina(deltaTime);
-
-    // 3. Process combat actions (Attack, Parry, Guard)
+    // 2. Process combat actions (Attack, Parry, Guard, Heal)
     this.handleCombatInputs();
 
-    // 4. Calculate movement direction relative to camera yaw
+    // 3. Update combat subsystem & weapon trails
+    const activeCam = camera || (this.physicsWorld ? new THREE.PerspectiveCamera() : (null as unknown as THREE.Camera));
+    if (activeCam) {
+      this.combatSystem.update(deltaTime, activeCam);
+    }
+
+    // 4. Handle stamina regeneration
+    this.updateStamina(deltaTime);
+
+    // 5. Calculate movement direction relative to camera yaw
     this.calculateMovement(deltaTime, cameraYaw);
 
-    // 5. Update procedural animator
+    // 6. Update procedural animator
     this.animator.update(deltaTime, this.currentSpeed);
 
-    // 6. Update visual effects
+    // 7. Update visual effects
     this.effects.update(deltaTime);
 
-    // 7. Dispatch real-time stats to UI
+    // 8. Dispatch real-time stats to UI
     this.eventBus.emit('PLAYER_STATS_UPDATED', this.getStats());
   }
 
@@ -201,19 +227,10 @@ export class AnukiController {
         this.dodgeTimer = 0;
       }
     }
-
-    if (this.isAttacking) {
-      this.attackTimer += deltaTime;
-      if (this.attackTimer >= this.attackDuration) {
-        this.isAttacking = false;
-        this.attackTimer = 0;
-        this.animator.setState('IDLE');
-      }
-    }
   }
 
   private updateStamina(deltaTime: number): void {
-    if (!this.isDodging && !this.inputManager.isActionActive('guard')) {
+    if (!this.isDodging && !this.combatSystem.isBlocking() && !this.combatSystem.isAttacking()) {
       const isSprinting = this.inputManager.isKeyDown('ShiftLeft') && this.movementVector.lengthSq() > 0.01;
       if (isSprinting && this.stamina > 0) {
         this.stamina = Math.max(0, this.stamina - this.staminaSprintCost * deltaTime);
@@ -225,59 +242,75 @@ export class AnukiController {
 
   public triggerAttackLight(): void {
     if (this.isDodging) return;
-    this.isAttacking = true;
-    this.attackTimer = 0;
-    this.attackDuration = 0.36;
-    this.animator.setState('ATTACK_LIGHT');
-    this.audioManager.playSwordSwing(false);
+    const res = this.combatSystem.executeLightAttack(this.stamina);
+    if (res.success) {
+      this.stamina = Math.max(0, this.stamina - res.staminaCost);
+      this.applyLungeImpulse(res.lungeDistance);
+    }
   }
 
   public triggerAttackHeavy(): void {
     if (this.isDodging) return;
-    this.isAttacking = true;
-    this.attackTimer = 0;
-    this.attackDuration = 0.54;
-    this.animator.setState('ATTACK_HEAVY');
-    this.audioManager.playSwordSwing(true);
+    const res = this.combatSystem.executeHeavyAttack(this.stamina);
+    if (res.success) {
+      this.stamina = Math.max(0, this.stamina - res.staminaCost);
+      this.applyLungeImpulse(res.lungeDistance);
+    }
   }
 
   public triggerParry(): void {
-    if (this.isDodging || this.isAttacking) return;
-    this.animator.setState('PARRY');
-    this.audioManager.playParryClang();
+    if (this.isDodging || this.combatSystem.isAttacking()) return;
+    this.combatSystem.executeParry();
+  }
+
+  public triggerHeal(): void {
+    if (this.isDodging || this.combatSystem.isAttacking()) return;
+    const res = this.combatSystem.executeHeal(this.health, this.maxHealth);
+    if (res.success) {
+      this.health = Math.min(this.maxHealth, this.health + res.amountHealed);
+    }
+  }
+
+  private applyLungeImpulse(distance: number): void {
+    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.currentRotationY);
+    this.movementVector.addScaledVector(forward, distance * 0.15);
   }
 
   private handleCombatInputs(): void {
     if (this.isDodging) return;
 
-    // Light Attack (J key)
-    if (this.inputManager.isActionJustPressed('lightAttack') && !this.isAttacking) {
+    // Light Attack (J key / Left Click)
+    if (this.inputManager.isActionJustPressed('lightAttack')) {
       this.triggerAttackLight();
       return;
     }
 
-    // Heavy Attack (K key)
-    if (this.inputManager.isActionJustPressed('heavyAttack') && !this.isAttacking) {
+    // Heavy Attack (K key / Right Click)
+    if (this.inputManager.isActionJustPressed('heavyAttack')) {
       this.triggerAttackHeavy();
       return;
     }
 
     // Parry (Q or F key)
-    if (this.inputManager.isActionJustPressed('parry') && !this.isAttacking) {
+    if (this.inputManager.isActionJustPressed('parry')) {
       this.triggerParry();
       return;
     }
 
-    // Guard (holding Shift or E)
-    if (this.inputManager.isActionActive('guard') && !this.isAttacking) {
-      this.animator.setState('GUARD');
+    // Consumable Heal (H key)
+    if (this.inputManager.isActionJustPressed('heal')) {
+      this.triggerHeal();
       return;
     }
+
+    // Guard (holding Shift)
+    const guardActive = this.inputManager.isActionActive('guard') && !this.combatSystem.isAttacking();
+    this.combatSystem.setGuarding(guardActive);
   }
 
   private calculateMovement(deltaTime: number, cameraYaw: number): void {
     // Don't interrupt attack animations with walking, but allow dodge cancel
-    if (this.isAttacking && !this.inputManager.isActionJustPressed('dodge')) {
+    if (this.combatSystem.isAttacking() && !this.inputManager.isActionJustPressed('dodge')) {
       this.currentSpeed = 0;
       return;
     }
@@ -291,7 +324,7 @@ export class AnukiController {
     // Check Dodge input (Space key)
     if (this.inputManager.isActionJustPressed('dodge') && !this.isDodging && this.stamina >= this.staminaDodgeCost) {
       this.isDodging = true;
-      this.isAttacking = false;
+      this.combatSystem.cancelAttack();
       this.dodgeTimer = 0;
       this.stamina -= this.staminaDodgeCost;
 
@@ -383,7 +416,7 @@ export class AnukiController {
       this.currentSpeed = THREE.MathUtils.lerp(this.currentSpeed, 0, deltaTime * 14.0);
       this.movementVector.set(0, 0, 0);
 
-      if (this.isGrounded && !this.isAttacking && this.animator.getState() !== 'GUARD' && this.animator.getState() !== 'PARRY') {
+      if (this.isGrounded && !this.combatSystem.isAttacking() && this.animator.getState() !== 'GUARD' && this.animator.getState() !== 'PARRY') {
         this.animator.setState('IDLE');
       }
       this.footstepTimer = 0;
@@ -451,5 +484,6 @@ export class AnukiController {
 
   public dispose(): void {
     this.effects.dispose();
+    this.combatSystem.dispose();
   }
 }

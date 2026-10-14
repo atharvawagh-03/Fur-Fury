@@ -778,3 +778,107 @@ html, body {
   color: #ffffff;
 }
 
+/* ==========================================================================
+   Step 5: Sword Combat & Abilities HUD Styling
+   ========================================================================== */
+
+/* Dynamic Floating Combo Counter */
+.combo-counter-banner {
+  position: absolute;
+  top: 19vh;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1.4rem;
+  background: linear-gradient(135deg, rgba(25, 15, 10, 0.9), rgba(12, 6, 8, 0.95));
+  border: 1px solid rgba(255, 180, 50, 0.6);
+  border-radius: 999px;
+  box-shadow: 0 0 20px rgba(255, 140, 20, 0.35), inset 0 0 15px rgba(255, 200, 80, 0.1);
+  pointer-events: none;
+  z-index: 30;
+  animation: comboPop 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes comboPop {
+  0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+.combo-count {
+  font-family: var(--font-title);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #ffcc00;
+  text-shadow: 0 0 10px rgba(255, 200, 0, 0.8);
+}
+
+.combo-label {
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #fff2db;
+  text-transform: uppercase;
+}
+
+/* Critical Riposte Opportunity Banner */
+.riposte-banner {
+  position: absolute;
+  top: 26vh;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.6rem 1.6rem;
+  background: linear-gradient(90deg, rgba(180, 130, 0, 0.2), rgba(255, 215, 0, 0.4), rgba(180, 130, 0, 0.2));
+  border: 1px solid #ffd700;
+  border-radius: 8px;
+  color: #fff9e6;
+  font-family: var(--font-title);
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.9);
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.5);
+  pointer-events: none;
+  z-index: 30;
+  animation: riposteGaze 0.4s infinite alternate;
+}
+
+@keyframes riposteGaze {
+  0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 18px rgba(255, 215, 0, 0.4); }
+  100% { transform: translateX(-50%) scale(1.04); box-shadow: 0 0 32px rgba(255, 215, 0, 0.8); }
+}
+
+/* Restorative Heal Action Button */
+.btn-action.heal-action {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.25), rgba(20, 80, 45, 0.15));
+  border-color: rgba(46, 204, 113, 0.6);
+  color: #85e8b0;
+}
+
+.btn-action.heal-action:hover {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.4), rgba(20, 80, 45, 0.3));
+  border-color: #2ecc71;
+  box-shadow: 0 0 14px rgba(46, 204, 113, 0.4);
+  color: #ffffff;
+}
+
+/* Specific Attack States Pills */
+.status-pill.attack_light_1,
+.status-pill.attack_light_2,
+.status-pill.attack_light_3 {
+  background: rgba(231, 76, 60, 0.3);
+  color: #ff7675;
+  border-color: rgba(231, 76, 60, 0.7);
+  box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
+}
+
+.status-pill.heal {
+  background: rgba(46, 204, 113, 0.25);
+  color: #2ecc71;
+  border-color: rgba(46, 204, 113, 0.6);
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+}
+
+

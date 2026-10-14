@@ -16,6 +16,7 @@ export interface KeyBindings {
   lockOn: string[];
   interact: string[];
   dragonCall: string[];
+  heal: string[];
   menu: string[];
 }
 
@@ -28,10 +29,11 @@ export const DefaultKeyBindings: KeyBindings = {
   heavyAttack: ['KeyK', 'Mouse2'],
   dodge: ['Space'],
   parry: ['KeyF', 'KeyQ'],
-  guard: ['ShiftLeft', 'KeyE'],
+  guard: ['ShiftLeft'],
   lockOn: ['KeyR', 'MiddleMouse'],
   interact: ['KeyE'],
   dragonCall: ['KeyT', 'KeyX'],
+  heal: ['KeyH'],
   menu: ['Escape', 'Enter'],
 };
 

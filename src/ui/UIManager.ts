@@ -105,8 +105,19 @@ export class UIManager {
 
         <!-- Milestone Badge -->
         <div class="milestone-badge">
-          <span class="pill">STEP 4 ACTIVE</span>
-          <span class="milestone-desc">Rhazakar Dragon & Opening Cinematic</span>
+          <span class="pill">STEP 5 ACTIVE</span>
+          <span class="milestone-desc">Sword Combat & Player Abilities</span>
+        </div>
+
+        <!-- Dynamic Floating Combo Counter -->
+        <div class="combo-counter-banner" id="combo-banner" style="display: none;">
+          <span class="combo-count" id="combo-count-text">1x</span>
+          <span class="combo-label" id="combo-label-text">COMBO!</span>
+        </div>
+
+        <!-- Critical Riposte Opportunity Banner -->
+        <div class="riposte-banner" id="riposte-banner" style="display: none;">
+          <span>⚡ CRITICAL RIPOSTE READY! Press [J / K]</span>
         </div>
 
         <!-- Lady Anuki Health & Stamina Combat Status Card -->
@@ -195,6 +206,10 @@ export class UIManager {
             <span class="icon">🛡️</span>
             <span>Parry (Q/F)</span>
           </button>
+          <button id="btn-action-heal" class="btn-action heal-action">
+            <span class="icon">🧪</span>
+            <span id="btn-heal-label">Elixir (H) [3/3]</span>
+          </button>
           <button id="btn-spawn-crest" class="btn-action secondary">
             <span class="icon">✨</span>
             <span>Drop Boulder</span>
@@ -208,9 +223,10 @@ export class UIManager {
             <span class="legend-chip"><kbd>T / X</kbd> Dragon Call</span>
             <span class="legend-chip"><kbd>SHIFT</kbd> Sprint / Guard</span>
             <span class="legend-chip"><kbd>SPACE</kbd> Evasive Dodge Roll</span>
-            <span class="legend-chip"><kbd>J</kbd> Light Attack / Draw Blade</span>
-            <span class="legend-chip"><kbd>K</kbd> Heavy Strike</span>
-            <span class="legend-chip"><kbd>Q / F</kbd> Parry</span>
+            <span class="legend-chip"><kbd>J</kbd> Light Attack Combo (1-2-3)</span>
+            <span class="legend-chip"><kbd>K</kbd> Heavy Breaker Strike</span>
+            <span class="legend-chip"><kbd>Q / F</kbd> Parry & Riposte</span>
+            <span class="legend-chip"><kbd>H</kbd> Elixir Heal</span>
             <span class="legend-chip"><kbd>R</kbd> Duel Lock-On</span>
             <span class="legend-chip"><kbd>ESC</kbd> Skip Cinematic</span>
           </div>
@@ -328,6 +344,15 @@ export class UIManager {
       });
     }
 
+    const btnHeal = document.getElementById('btn-action-heal');
+    if (btnHeal) {
+      btnHeal.addEventListener('click', () => {
+        this.audioManager.unlock();
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH' }));
+        setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyH' })), 100);
+      });
+    }
+
     const btnSpawn = document.getElementById('btn-spawn-crest');
     if (btnSpawn) {
       btnSpawn.addEventListener('click', () => {
@@ -424,6 +449,38 @@ export class UIManager {
 
       if (this.heroSpeedText) {
         this.heroSpeedText.textContent = `${stats.speed.toFixed(1)} m/s`;
+      }
+
+      // Dynamic floating combo counter update
+      const comboBanner = document.getElementById('combo-banner');
+      const comboCountText = document.getElementById('combo-count-text');
+      const comboLabelText = document.getElementById('combo-label-text');
+      if (comboBanner && comboCountText && comboLabelText) {
+        if (stats.comboCount && stats.comboCount > 0) {
+          comboBanner.style.display = 'flex';
+          comboCountText.textContent = `${stats.comboCount}x`;
+          if (stats.comboCount >= 3) {
+            comboLabelText.textContent = 'FINISHER!';
+            comboBanner.classList.add('finisher');
+          } else {
+            comboLabelText.textContent = 'COMBO!';
+            comboBanner.classList.remove('finisher');
+          }
+        } else {
+          comboBanner.style.display = 'none';
+        }
+      }
+
+      // Critical Riposte banner
+      const riposteBanner = document.getElementById('riposte-banner');
+      if (riposteBanner) {
+        riposteBanner.style.display = stats.riposteActive ? 'flex' : 'none';
+      }
+
+      // Consumable Elixir count button label
+      const healLabel = document.getElementById('btn-heal-label');
+      if (healLabel && stats.elixirCount !== undefined && stats.maxElixirs !== undefined) {
+        healLabel.textContent = `Elixir (H) [${stats.elixirCount}/${stats.maxElixirs}]`;
       }
     });
 

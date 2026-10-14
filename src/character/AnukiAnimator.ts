@@ -20,9 +20,13 @@ export type LocomotionState =
   | 'FALL'
   | 'DODGE'
   | 'ATTACK_LIGHT'
+  | 'ATTACK_LIGHT_1'
+  | 'ATTACK_LIGHT_2'
+  | 'ATTACK_LIGHT_3'
   | 'ATTACK_HEAVY'
   | 'PARRY'
-  | 'GUARD';
+  | 'GUARD'
+  | 'HEAL';
 
 export class AnukiAnimator {
   private rig: AnukiRig;
@@ -46,10 +50,14 @@ export class AnukiAnimator {
   private dodgeProgress: number = 0;
   private dodgeDuration: number = 0.45; // 450ms responsive combat dodge
 
-  // Attack Animation
+  // Attack Animation (Combo 1, 2, 3 & Heavy Breaker)
   private attackProgress: number = 0;
-  private attackDuration: number = 0.4;
-  private attackType: 'LIGHT' | 'HEAVY' = 'LIGHT';
+  private attackDuration: number = 0.35;
+  private attackType: 'LIGHT_1' | 'LIGHT_2' | 'LIGHT_3' | 'HEAVY' = 'LIGHT_1';
+
+  // Healing animation
+  private healProgress: number = 0;
+  private healDuration: number = 0.85;
 
   // Cape cloth original vertices
   private capePosAttr: THREE.BufferAttribute;
@@ -75,15 +83,39 @@ export class AnukiAnimator {
 
       if (state === 'DODGE') {
         this.dodgeProgress = 0;
-      } else if (state === 'ATTACK_LIGHT' || state === 'ATTACK_HEAVY') {
+      } else if (
+        state === 'ATTACK_LIGHT' ||
+        state === 'ATTACK_LIGHT_1' ||
+        state === 'ATTACK_LIGHT_2' ||
+        state === 'ATTACK_LIGHT_3' ||
+        state === 'ATTACK_HEAVY'
+      ) {
         this.attackProgress = 0;
-        this.attackType = state === 'ATTACK_LIGHT' ? 'LIGHT' : 'HEAVY';
-        this.attackDuration = state === 'ATTACK_LIGHT' ? 0.35 : 0.55;
+        if (state === 'ATTACK_LIGHT_2') {
+          this.attackType = 'LIGHT_2';
+          this.attackDuration = 0.38;
+        } else if (state === 'ATTACK_LIGHT_3') {
+          this.attackType = 'LIGHT_3';
+          this.attackDuration = 0.52;
+        } else if (state === 'ATTACK_HEAVY') {
+          this.attackType = 'HEAVY';
+          this.attackDuration = 0.58;
+        } else {
+          this.attackType = 'LIGHT_1';
+          this.attackDuration = 0.35;
+        }
+      } else if (state === 'HEAL') {
+        this.healProgress = 0;
+        this.healDuration = 0.85;
       }
     }
   }
 
   public getState(): LocomotionState {
+    return this.targetState;
+  }
+
+  public getCurrentBlendedState(): LocomotionState {
     return this.currentState;
   }
 
@@ -132,6 +164,9 @@ export class AnukiAnimator {
         this.animateDodge(deltaTime);
         break;
       case 'ATTACK_LIGHT':
+      case 'ATTACK_LIGHT_1':
+      case 'ATTACK_LIGHT_2':
+      case 'ATTACK_LIGHT_3':
       case 'ATTACK_HEAVY':
         this.animateAttack(deltaTime);
         break;
@@ -140,6 +175,9 @@ export class AnukiAnimator {
         break;
       case 'GUARD':
         this.animateGuard(deltaTime);
+        break;
+      case 'HEAL':
+        this.animateHeal(deltaTime);
         break;
     }
 
@@ -385,57 +423,132 @@ export class AnukiAnimator {
   }
 
   /**
-   * Sword Attack Animation (Light / Heavy)
+   * Sword Attack Animation (Light 1, Light 2, Light 3 Finisher & Heavy Breaker)
    */
   private animateAttack(deltaTime: number): void {
     this.attackProgress += deltaTime / this.attackDuration;
     const p = Math.min(1.0, this.attackProgress);
 
-    if (this.attackType === 'LIGHT') {
-      // Horizontal cross slash
-      if (p < 0.25) {
-        // Wind-up: pull sword back to right shoulder
-        const w = p / 0.25;
-        this.rig.rightShoulder.rotation.set(-0.2 * w, -0.6 * w, 0.4 * w);
-        this.rig.rightArm.rotation.set(-0.4 * w, 0.3 * w, 0.2 * w);
-        this.rig.swordMesh.rotation.set(Math.PI / 2 + 0.3, -0.5 * w, 0.3 * w);
-        this.rig.spine.rotation.y = -0.3 * w;
-      } else if (p < 0.65) {
-        // Swift horizontal slash forward
-        const s = (p - 0.25) / 0.4;
-        this.rig.rightShoulder.rotation.set(0.3, 0.8 * s - 0.6, -0.2);
-        this.rig.rightArm.rotation.set(0.2, -0.5 * s + 0.3, -0.4);
-        this.rig.swordMesh.rotation.set(Math.PI / 2 - 0.2, 1.2 * s - 0.5, -0.6 * s);
-        this.rig.spine.rotation.y = -0.3 + 0.7 * s;
-      } else {
-        // Recovery
-        const r = (p - 0.65) / 0.35;
-        this.rig.rightShoulder.rotation.set(0.3 * (1 - r), 0.2 * (1 - r), 0);
-        this.rig.spine.rotation.y = 0.4 * (1 - r);
+    switch (this.attackType) {
+      case 'LIGHT_1': {
+        // Strike 1: Horizontal cross-slash (right to left)
+        if (p < 0.25) {
+          const w = p / 0.25;
+          this.rig.rightShoulder.rotation.set(-0.2 * w, -0.6 * w, 0.4 * w);
+          this.rig.rightArm.rotation.set(-0.4 * w, 0.3 * w, 0.2 * w);
+          this.rig.swordMesh.rotation.set(Math.PI / 2 + 0.3, -0.5 * w, 0.3 * w);
+          this.rig.spine.rotation.y = -0.3 * w;
+        } else if (p < 0.65) {
+          const s = (p - 0.25) / 0.4;
+          this.rig.rightShoulder.rotation.set(0.3, 0.8 * s - 0.6, -0.2);
+          this.rig.rightArm.rotation.set(0.2, -0.5 * s + 0.3, -0.4);
+          this.rig.swordMesh.rotation.set(Math.PI / 2 - 0.2, 1.2 * s - 0.5, -0.6 * s);
+          this.rig.spine.rotation.y = -0.3 + 0.7 * s;
+        } else {
+          const r = (p - 0.65) / 0.35;
+          this.rig.rightShoulder.rotation.set(0.3 * (1 - r), 0.2 * (1 - r), 0);
+          this.rig.spine.rotation.y = 0.4 * (1 - r);
+        }
+        break;
       }
+      case 'LIGHT_2': {
+        // Strike 2: Backhand rising diagonal sweep (left to right)
+        if (p < 0.25) {
+          const w = p / 0.25;
+          this.rig.rightShoulder.rotation.set(0.3 * w, 0.5 * w, -0.2 * w);
+          this.rig.rightArm.rotation.set(-0.2 * w, -0.6 * w, 0.2 * w);
+          this.rig.swordMesh.rotation.set(Math.PI / 2 - 0.3, 0.4 * w, -0.3 * w);
+          this.rig.spine.rotation.y = 0.35 * w;
+        } else if (p < 0.65) {
+          const s = (p - 0.25) / 0.4;
+          this.rig.rightShoulder.rotation.set(0.3 - 0.5 * s, 0.5 - 1.0 * s, 0.3 * s);
+          this.rig.rightArm.rotation.set(-0.2 + 0.6 * s, -0.6 + 1.1 * s, -0.4 * s);
+          this.rig.swordMesh.rotation.set(Math.PI / 2 + 0.2, -1.1 * s + 0.4, 0.7 * s);
+          this.rig.spine.rotation.y = 0.35 - 0.75 * s;
+        } else {
+          const r = (p - 0.65) / 0.35;
+          this.rig.rightShoulder.rotation.set(-0.2 * (1 - r), -0.5 * (1 - r), 0);
+          this.rig.spine.rotation.y = -0.4 * (1 - r);
+        }
+        break;
+      }
+      case 'LIGHT_3': {
+        // Strike 3: Upward rising spinning leap slash (360 spin + vertical hang)
+        const spin = p * Math.PI * 2;
+        this.rig.root.rotation.y = spin;
+        if (p < 0.3) {
+          const w = p / 0.3;
+          this.rig.hips.position.y = 0.44 - 0.08 * w; // Crouch
+          this.rig.rightArm.rotation.set(-0.8 * w, 0.4 * w, 0.4 * w);
+          this.rig.swordMesh.rotation.set(Math.PI / 2 + 0.4, 0, 0.2);
+        } else if (p < 0.7) {
+          const s = (p - 0.3) / 0.4;
+          this.rig.hips.position.y = 0.36 + Math.sin(s * Math.PI) * 0.35; // Aerial leap!
+          this.rig.rightArm.rotation.set(-1.2 + 2.0 * s, -0.4 * s, -0.5 * s);
+          this.rig.swordMesh.rotation.set(Math.PI / 2 - 0.4, 1.4 * s, -0.8 * s);
+          this.rig.leftArm.rotation.set(0.5, 0, -0.5);
+        } else {
+          const r = (p - 0.7) / 0.3;
+          this.rig.hips.position.y = 0.44 - (1 - r) * 0.06; // Touchdown
+          this.rig.rightArm.rotation.set(0.8 * (1 - r), 0, 0);
+        }
+        break;
+      }
+      case 'HEAVY': {
+        // Heavy Breaker: Two-handed overhead downward cleave
+        if (p < 0.3) {
+          const w = p / 0.3;
+          this.rig.rightArm.rotation.set(-1.5 * w, 0, 0.3);
+          this.rig.leftArm.rotation.set(-0.9 * w, 0, -0.3);
+          this.rig.spine.rotation.x = -0.28 * w;
+          this.rig.hips.position.y = 0.44 + 0.06 * w;
+        } else if (p < 0.7) {
+          const s = (p - 0.3) / 0.4;
+          this.rig.rightArm.rotation.set(-1.5 + 2.4 * s, 0, 0);
+          this.rig.leftArm.rotation.set(-0.9 + 1.4 * s, 0, 0);
+          this.rig.spine.rotation.x = -0.28 + 0.65 * s;
+          this.rig.hips.position.y = 0.50 - 0.15 * s; // Deep impact crouch
+        } else {
+          const r = (p - 0.7) / 0.3;
+          this.rig.rightArm.rotation.set(0.9 * (1 - r), 0, 0);
+          this.rig.spine.rotation.x = 0.37 * (1 - r);
+          this.rig.hips.position.y = 0.35 + 0.09 * r;
+        }
+        break;
+      }
+    }
+
+    if (p >= 1.0) {
+      this.rig.root.rotation.y = 0;
+      this.setState('IDLE');
+    }
+  }
+
+  /**
+   * Healing Consumable Animation
+   */
+  private animateHeal(deltaTime: number): void {
+    this.healProgress += deltaTime / this.healDuration;
+    const p = Math.min(1.0, this.healProgress);
+
+    // Left paw brings restorative draught to snout; head tilts back
+    if (p < 0.35) {
+      const w = p / 0.35;
+      this.rig.leftArm.rotation.set(-1.2 * w, 0.4 * w, 0.5 * w);
+      this.rig.leftForearm.rotation.set(1.4 * w, 0, 0);
+      this.rig.head.rotation.x = -0.3 * w;
+      this.rig.rightArm.rotation.set(0.2, 0, 0);
+    } else if (p < 0.75) {
+      // Sip with head back
+      this.rig.leftArm.rotation.set(-1.2, 0.4, 0.5);
+      this.rig.leftForearm.rotation.set(1.4, 0, 0);
+      this.rig.head.rotation.x = -0.35 + Math.sin(p * 20) * 0.04;
     } else {
-      // Heavy overhead vertical strike
-      if (p < 0.3) {
-        // Wind-up: raise sword high above head
-        const w = p / 0.3;
-        this.rig.rightArm.rotation.set(-1.4 * w, 0, 0.3);
-        this.rig.leftArm.rotation.set(-0.8 * w, 0, -0.3);
-        this.rig.spine.rotation.x = -0.25 * w;
-        this.rig.hips.position.y = 0.44 + 0.05 * w;
-      } else if (p < 0.7) {
-        // Thunderous downward chop
-        const s = (p - 0.3) / 0.4;
-        this.rig.rightArm.rotation.set(-1.4 + 2.2 * s, 0, 0);
-        this.rig.leftArm.rotation.set(-0.8 + 1.2 * s, 0, 0);
-        this.rig.spine.rotation.x = -0.25 + 0.6 * s;
-        this.rig.hips.position.y = 0.49 - 0.12 * s; // Deep impact crouch
-      } else {
-        // Recovery
-        const r = (p - 0.7) / 0.3;
-        this.rig.rightArm.rotation.set(0.8 * (1 - r), 0, 0);
-        this.rig.spine.rotation.x = 0.35 * (1 - r);
-        this.rig.hips.position.y = 0.37 + 0.07 * r;
-      }
+      // Lower paw and return to ready stance
+      const r = (p - 0.75) / 0.25;
+      this.rig.leftArm.rotation.set(-1.2 * (1 - r), 0.4 * (1 - r), 0.5 * (1 - r));
+      this.rig.leftForearm.rotation.set(1.4 * (1 - r), 0, 0);
+      this.rig.head.rotation.x = -0.35 * (1 - r);
     }
 
     if (p >= 1.0) {

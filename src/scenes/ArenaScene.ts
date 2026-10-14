@@ -18,6 +18,9 @@ import { DragonEffects } from '../dragon/DragonEffects';
 import { OpeningCinematic } from '../cinematic/OpeningCinematic';
 import { EventBus } from '../core/EventBus';
 
+import { DamageableDummy, DamageableCrate } from '../combat/DamageableProp';
+import { PropFactory } from '../world/PropFactory';
+
 export type ActiveCameraMode = 'THIRD_PERSON' | 'CINEMATIC';
 
 export class ArenaScene implements IScene {
@@ -36,6 +39,9 @@ export class ArenaScene implements IScene {
   private dragonEffects!: DragonEffects;
   private cinematic!: OpeningCinematic;
 
+  // Step 5 Combat Subsystem & Damageable Targets
+  private damageableTargets: (DamageableDummy | DamageableCrate)[] = [];
+
   private cameraMode: ActiveCameraMode = 'THIRD_PERSON';
   private eventBus = EventBus.getInstance();
   private unbindEvents: (() => void)[] = [];
@@ -51,6 +57,10 @@ export class ArenaScene implements IScene {
 
   public getAnuki(): AnukiController {
     return this.anuki;
+  }
+
+  public getDamageableTargets(): (DamageableDummy | DamageableCrate)[] {
+    return this.damageableTargets;
   }
 
   public getRhazakar(): RhazakarModel {
@@ -85,7 +95,8 @@ export class ArenaScene implements IScene {
       context.audioManager,
       0,
       0.1,
-      2.5
+      2.5,
+      context.cameraManager
     );
 
     // 4. Initialize Rhazakar the Scarlet Dragon and VFX
@@ -181,8 +192,39 @@ export class ArenaScene implements IScene {
     window.addEventListener('mousemove', onMouseMove);
     this.unbindEvents.push(() => window.removeEventListener('mousemove', onMouseMove));
 
+    // Step 5: Register practice dummy targets and props into combat subsystem
+    this.setupCombatTargets();
+
     // Launch opening cinematic on initial game start per PRD Section 10
     this.playOpeningCinematic();
+  }
+
+  /**
+   * Initializes training pell targets and tournament breakable props for combat testing
+   */
+  private setupCombatTargets(): void {
+    const combat = this.anuki.getCombatSystem();
+
+    // 1. Center Ring Practice Pell (Training Dummy) placed near Anuki's duel entrance
+    const centerPellProp = PropFactory.createTrainingDummy(-3.0, 0, -3.5);
+    this.scene.add(centerPellProp.mesh);
+    const centerDummy = new DamageableDummy(centerPellProp.mesh as THREE.Group, 'Master Pell (Training Dummy)');
+    this.damageableTargets.push(centerDummy);
+    combat.registerTarget(centerDummy);
+
+    // 2. Register perimeter tournament training dummies & breakable crates from GrandArena
+    const arenaProps = this.arena.getProps();
+    for (const prop of arenaProps) {
+      if (prop.type === 'dummy' && prop.mesh instanceof THREE.Group) {
+        const dummy = new DamageableDummy(prop.mesh, 'West Arena Pell');
+        this.damageableTargets.push(dummy);
+        combat.registerTarget(dummy);
+      } else if (prop.type === 'crate' && prop.mesh instanceof THREE.Group) {
+        const crate = new DamageableCrate(prop.mesh, prop.body, 'Tournament Supply Crate');
+        this.damageableTargets.push(crate);
+        combat.registerTarget(crate);
+      }
+    }
   }
 
   public playOpeningCinematic(): void {
@@ -232,6 +274,11 @@ export class ArenaScene implements IScene {
         body: phys.body,
         type: 'crate',
       });
+      // Register spawned prop as a physical damageable target
+      const damageableBoulder = new DamageableCrate(mesh as unknown as THREE.Group, phys.body, 'Spawned Boulder');
+      this.damageableTargets.push(damageableBoulder);
+      this.anuki.getCombatSystem().registerTarget(damageableBoulder);
+
       this.context.audioManager.playHitSound(280);
       this.context.cameraManager.addShake(0.12);
     }
@@ -326,8 +373,15 @@ export class ArenaScene implements IScene {
     // Get active camera yaw for character movement orientation
     const cameraYaw = this.thirdPersonCamera.getYaw();
 
-    // Update Lady Anuki (Controller, Animator, Particle FX, Audio)
-    this.anuki.update(deltaTime, cameraYaw);
+    // Update Lady Anuki (Controller, Animator, Particle FX, Audio, Combat)
+    this.anuki.update(deltaTime, cameraYaw, this.context.cameraManager.camera);
+
+    // Update damageable dummy wobble physics and poise recovery
+    for (const target of this.damageableTargets) {
+      if (target instanceof DamageableDummy) {
+        target.update(deltaTime);
+      }
+    }
 
     // Update Rhazakar in continuous overhead arena patrol mode
     this.dragonAnimator.update(deltaTime);

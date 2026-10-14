@@ -228,6 +228,77 @@ export class RhazakarMaterials {
     return texture;
   }
 
+  private static scuteTextureCache: THREE.CanvasTexture | null = null;
+
+  /**
+   * Procedural segmented cream-sand underbelly armor scute plate texture
+   * Conforming to PRD Section 10 & official Red Dragon visual reference:
+   * Cream/tan palette (#dfc5a0 / #e8d5be) with segmented horizontal plates and horny striations
+   */
+  public static createScuteTexture(): THREE.CanvasTexture {
+    if (this.scuteTextureCache) return this.scuteTextureCache;
+
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+
+    // Base warm bone/cream sand fill
+    ctx.fillStyle = '#dec5a2';
+    ctx.fillRect(0, 0, size, size);
+
+    // Segmented horizontal armor plate bands with deep shadow grooves
+    const plateCount = 10;
+    const plateH = size / plateCount;
+    for (let i = 0; i < plateCount; i++) {
+      const y = i * plateH;
+
+      // Curved plate gradient from highlighted upper edge to shaded bottom edge
+      const grad = ctx.createLinearGradient(0, y, 0, y + plateH);
+      grad.addColorStop(0, '#f5e4cd');
+      grad.addColorStop(0.2, '#e8d2b4');
+      grad.addColorStop(0.75, '#c9ad88');
+      grad.addColorStop(1, '#9e7e59');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, y, size, plateH);
+
+      // Deep groove between plates
+      ctx.strokeStyle = '#5c3e24';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.bezierCurveTo(size * 0.25, y + 4, size * 0.75, y + 4, size, y);
+      ctx.stroke();
+
+      // Sharp highlight just below the groove
+      ctx.strokeStyle = 'rgba(255, 245, 230, 0.75)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, y + 4);
+      ctx.bezierCurveTo(size * 0.25, y + 7, size * 0.75, y + 7, size, y + 4);
+      ctx.stroke();
+
+      // Subtle vertical bone striations across plates
+      for (let s = 0; s < 18; s++) {
+        const sx = Math.random() * size;
+        ctx.strokeStyle = 'rgba(120, 85, 55, 0.22)';
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.moveTo(sx, y + 3);
+        ctx.lineTo(sx + (Math.random() - 0.5) * 6, y + plateH - 2);
+        ctx.stroke();
+      }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1, 3);
+    this.scuteTextureCache = texture;
+    return texture;
+  }
+
   /**
    * PBR Primary Dragon Scales Material
    */
@@ -245,13 +316,17 @@ export class RhazakarMaterials {
 
   /**
    * PBR Armored Underbelly / Keel Scute Plates Material
+   * Conforms to official Red Dragon reference palette: cream-sand armor (#dec5a2)
    */
   public static createBellyScutesMaterial(): THREE.MeshStandardMaterial {
+    const scuteMap = this.createScuteTexture();
     return new THREE.MeshStandardMaterial({
-      color: 0x4a1212,
-      roughness: 0.65,
-      metalness: 0.12,
-      bumpScale: 0.05,
+      color: 0xdec5a2,
+      roughness: 0.58,
+      metalness: 0.1,
+      map: scuteMap,
+      bumpMap: scuteMap,
+      bumpScale: 0.12,
     });
   }
 

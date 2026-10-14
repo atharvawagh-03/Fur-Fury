@@ -73,8 +73,8 @@ export class AnukiController {
 
   // Transform helpers
   private movementVector: THREE.Vector3 = new THREE.Vector3();
-  private targetRotationY: number = 0;
-  private currentRotationY: number = 0;
+  private targetRotationY: number = Math.PI; // Face North Gate (-Z) by default
+  private currentRotationY: number = Math.PI;
 
   constructor(
     scene: THREE.Scene,
@@ -137,6 +137,12 @@ export class AnukiController {
     this.currentSpeed = 0;
     this.verticalVelocity = 0;
     this.movementVector.set(0, 0, 0);
+  }
+
+  public setFacing(yaw: number): void {
+    this.targetRotationY = yaw;
+    this.currentRotationY = yaw;
+    this.model.getRoot().rotation.y = yaw;
   }
 
   public getStats(): PlayerStats {

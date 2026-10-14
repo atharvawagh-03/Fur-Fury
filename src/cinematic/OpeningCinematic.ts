@@ -138,6 +138,20 @@ export class OpeningCinematic {
     // Attach Anuki to Rhazakar's horn perch
     this.attachAnukiToPerch();
 
+    // Snap camera immediately to mounted close-up framing to prevent ground-lerp delay
+    const perchWorld = new THREE.Vector3();
+    this.rhazakar.getPerchWorldPosition(perchWorld);
+    const camTarget = perchWorld.clone().add(new THREE.Vector3(0, 0.35, 0));
+    const camPos = perchWorld.clone().add(
+      new THREE.Vector3(
+        Math.sin(this.lookYaw) * 3.0,
+        0.75 + this.lookPitch * 1.2,
+        -2.8 + Math.cos(this.lookYaw) * 0.4
+      )
+    );
+    this.cameraManager.camera.position.copy(camPos);
+    this.cameraManager.camera.lookAt(camTarget);
+
     // Notify UI: cinematic started
     this.eventBus.emit('CINEMATIC_STATE', {
       active: true,
@@ -454,7 +468,7 @@ export class OpeningCinematic {
 
       if (dismountProg >= 1.0) {
         this.anuki.teleport(0, 0, -3.2);
-        this.anuki.getModel().getRoot().rotation.set(0, 0, 0); // Face North Gate
+        this.anuki.getModel().getRoot().rotation.set(0, Math.PI, 0); // Face North Gate (-Z)
       }
     }
     // 5.5s+: Contextual Sword Draw prompt & Roar
@@ -545,20 +559,20 @@ export class OpeningCinematic {
   private syncAnukiMountedPosition(): void {
     const perchWorld = new THREE.Vector3();
     this.rhazakar.getPerchWorldPosition(perchWorld);
-    // Align Anuki facing forward (-Z) on the dragon's head
+    // Align Anuki facing forward (-Z) matching Rhazakar's flight direction
     this.anuki.teleport(perchWorld.x, perchWorld.y, perchWorld.z);
-    this.anuki.getModel().getRoot().rotation.set(0, 0, 0);
+    this.anuki.setFacing(Math.PI);
   }
 
   private attachAnukiToPerch(): void {
     const perchWorld = new THREE.Vector3();
     this.rhazakar.getPerchWorldPosition(perchWorld);
     this.anuki.teleport(perchWorld.x, perchWorld.y, perchWorld.z);
-    this.anuki.getModel().getRoot().rotation.set(0, 0, 0);
+    this.anuki.setFacing(Math.PI);
   }
 
   private detachAnukiFromPerch(groundPos: THREE.Vector3): void {
     this.anuki.teleport(groundPos.x, groundPos.y, groundPos.z);
-    this.anuki.getModel().getRoot().rotation.set(0, 0, 0); // Face North Gate
+    this.anuki.setFacing(Math.PI); // Face North Gate (-Z)
   }
 }

@@ -220,6 +220,26 @@ export class RhazakarModel {
     neck1Mesh.castShadow = true;
     neck1.add(neck1Mesh);
 
+    // Cream-sand underbelly/throat scute shield on neck 1 (Reference: Front & Side view)
+    const neck1Scute = new THREE.Mesh(
+      new THREE.BoxGeometry(1.9, 0.45, 2.2),
+      bellyMat
+    );
+    neck1Scute.position.set(0, 0.6, -1.1);
+    neck1Scute.rotation.x = 0.2;
+    neck1Scute.castShadow = true;
+    neck1.add(neck1Scute);
+
+    // Dorsal neck spike (Reference: Scale & Spike detail)
+    const neck1Spike = new THREE.Mesh(
+      new THREE.ConeGeometry(0.18, 1.1, 6),
+      hornMat
+    );
+    neck1Spike.position.set(0, 2.1, 0.4);
+    neck1Spike.rotation.x = -0.4;
+    neck1Spike.castShadow = true;
+    neck1.add(neck1Spike);
+
     const neck2 = new THREE.Group();
     neck2.name = 'Dragon_Neck2';
     neck2.position.set(0, 2.0, -0.6);
@@ -235,6 +255,26 @@ export class RhazakarModel {
     neck2Mesh.castShadow = true;
     neck2.add(neck2Mesh);
 
+    // Cream-sand scute on neck 2
+    const neck2Scute = new THREE.Mesh(
+      new THREE.BoxGeometry(1.6, 0.4, 2.0),
+      bellyMat
+    );
+    neck2Scute.position.set(0, 0.5, -0.9);
+    neck2Scute.rotation.x = 0.15;
+    neck2Scute.castShadow = true;
+    neck2.add(neck2Scute);
+
+    // Dorsal neck spike 2
+    const neck2Spike = new THREE.Mesh(
+      new THREE.ConeGeometry(0.16, 0.95, 6),
+      hornMat
+    );
+    neck2Spike.position.set(0, 1.8, 0.3);
+    neck2Spike.rotation.x = -0.35;
+    neck2Spike.castShadow = true;
+    neck2.add(neck2Spike);
+
     const neck3 = new THREE.Group();
     neck3.name = 'Dragon_Neck3';
     neck3.position.set(0, 1.8, -0.4);
@@ -248,6 +288,26 @@ export class RhazakarModel {
     neck3Mesh.position.set(0, 0.8, -0.2);
     neck3Mesh.castShadow = true;
     neck3.add(neck3Mesh);
+
+    // Cream-sand throat scute on neck 3
+    const neck3Scute = new THREE.Mesh(
+      new THREE.BoxGeometry(1.3, 0.35, 1.8),
+      bellyMat
+    );
+    neck3Scute.position.set(0, 0.45, -0.7);
+    neck3Scute.rotation.x = 0.1;
+    neck3Scute.castShadow = true;
+    neck3.add(neck3Scute);
+
+    // Dorsal neck spike 3
+    const neck3Spike = new THREE.Mesh(
+      new THREE.ConeGeometry(0.14, 0.8, 6),
+      hornMat
+    );
+    neck3Spike.position.set(0, 1.5, 0.2);
+    neck3Spike.rotation.x = -0.3;
+    neck3Spike.castShadow = true;
+    neck3.add(neck3Spike);
 
     // 6. Head & Skull
     const head = new THREE.Group();
@@ -303,6 +363,21 @@ export class RhazakarModel {
     eyeR.position.set(0.95, 0.4, -0.85);
     head.add(eyeR);
 
+    // Lateral Cheek / Jaw Horn Spikes (Reference: Head Close-up)
+    for (const side of [-1, 1]) {
+      const cheekHorn1 = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.75, 6), hornMat);
+      cheekHorn1.position.set(side * 1.15, -0.05, -0.6);
+      cheekHorn1.rotation.set(-0.25, 0, side * -0.9);
+      cheekHorn1.castShadow = true;
+      head.add(cheekHorn1);
+
+      const cheekHorn2 = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.6, 6), hornMat);
+      cheekHorn2.position.set(side * 1.05, -0.15, -1.3);
+      cheekHorn2.rotation.set(-0.2, 0, side * -0.85);
+      cheekHorn2.castShadow = true;
+      head.add(cheekHorn2);
+    }
+
     // Upper fangs
     for (let f = -1; f <= 1; f += 0.5) {
       if (Math.abs(f) < 0.2) continue;
@@ -325,6 +400,15 @@ export class RhazakarModel {
     jawMesh.position.set(0, -0.2, -1.3);
     jawMesh.castShadow = true;
     jaw.add(jawMesh);
+
+    // Cream-sand scute on lower jaw / chin
+    const jawScute = new THREE.Mesh(
+      new THREE.BoxGeometry(1.4, 0.22, 2.3),
+      bellyMat
+    );
+    jawScute.position.set(0, -0.45, -1.25);
+    jawScute.castShadow = true;
+    jaw.add(jawScute);
 
     // Lower fangs
     for (let f = -1; f <= 1; f += 0.5) {
@@ -359,6 +443,11 @@ export class RhazakarModel {
     perchSocket.name = 'Perch_Socket_Anuki';
     perchSocket.position.set(0, 0.95, 0.2);
     head.add(perchSocket);
+
+    // Dedicated hero rim/fill light on perch for cinematic flight readability
+    const heroPerchLight = new THREE.PointLight(0xfffaed, 1.8, 6.0, 1.6);
+    heroPerchLight.position.set(0, 0.8, -0.6);
+    perchSocket.add(heroPerchLight);
 
     // Leather mount saddle cushion & grip rim
     const saddlePad = new THREE.Mesh(

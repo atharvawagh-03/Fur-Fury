@@ -24,6 +24,7 @@ import { GarrickModel } from '../enemy/GarrickModel';
 import { GarrickAI } from '../enemy/GarrickAI';
 import { PhotoModeController } from '../camera/PhotoModeController';
 import { VFXManager } from '../effects/VFXManager';
+import { DisposalHelper } from '../core/DisposalHelper';
 
 export type ActiveCameraMode = 'THIRD_PERSON' | 'CINEMATIC';
 
@@ -509,6 +510,7 @@ export class ArenaScene implements IScene {
     this.dragonEffects.dispose();
     this.environment.dispose();
     this.arena.dispose();
+    DisposalHelper.disposeHierarchy(this.scene);
     this.scene.clear();
   }
 }

@@ -11,6 +11,8 @@ import { CameraManager } from '../camera/CameraManager';
 import { PhysicsWorld } from '../physics/PhysicsWorld';
 import { SceneManager } from '../scene/SceneManager';
 import { InputManager } from '../input/InputManager';
+import { Profiler } from './Profiler';
+import { QualityManager } from './QualityManager';
 
 export class Engine {
   private container: HTMLElement;
@@ -20,6 +22,8 @@ export class Engine {
   private sceneManager: SceneManager;
   private inputManager: InputManager;
   private time: Time;
+  private profiler: Profiler;
+  private qualityManager: QualityManager;
 
   private isRunning: boolean = false;
   private physicsAccumulator: number = 0;
@@ -57,7 +61,13 @@ export class Engine {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    container.appendChild(this.renderer.domElement);
+    this.container.appendChild(this.renderer.domElement);
+
+    this.profiler = Profiler.getInstance();
+    this.profiler.setRenderer(this.renderer);
+
+    this.qualityManager = QualityManager.getInstance();
+    this.qualityManager.setRenderer(this.renderer);
 
     this.setupResizeHandler();
   }
@@ -70,6 +80,14 @@ export class Engine {
     return this.time;
   }
 
+  public getProfiler(): Profiler {
+    return this.profiler;
+  }
+
+  public getQualityManager(): QualityManager {
+    return this.qualityManager;
+  }
+
   private setupResizeHandler(): void {
     const handleResize = () => {
       const width = this.container.clientWidth || window.innerWidth;
@@ -79,7 +97,7 @@ export class Engine {
 
       this.cameraManager.handleResize(width, height);
       this.renderer.setSize(width, height);
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, GameConfig.GRAPHICS.PIXEL_RATIO_MAX));
+      this.qualityManager.setPreset(this.qualityManager.getProfile().preset);
     };
 
     window.addEventListener('resize', handleResize);
@@ -91,6 +109,7 @@ export class Engine {
     if (this.isRunning) return;
     this.isRunning = true;
     this.time.reset();
+    this.profiler.reset();
     this.loop(performance.now());
   }
 
@@ -105,10 +124,12 @@ export class Engine {
   private loop = (currentTime: number): void => {
     if (!this.isRunning) return;
 
+    this.profiler.startFrame(currentTime);
     this.time.update(currentTime);
     const dt = this.time.deltaTime;
 
     // --- Fixed-timestep physics simulation ---
+    const physicsStart = performance.now();
     this.physicsAccumulator += dt;
     let subSteps = 0;
     while (this.physicsAccumulator >= this.fixedDeltaTime && subSteps < this.maxSubSteps) {
@@ -122,6 +143,8 @@ export class Engine {
     if (this.physicsAccumulator > this.fixedDeltaTime * this.maxSubSteps) {
       this.physicsAccumulator = 0;
     }
+    const physicsEnd = performance.now();
+    this.profiler.recordPhysicsDuration(physicsEnd - physicsStart);
 
     // --- Variable timestep update ---
     this.cameraManager.update(dt);
@@ -132,6 +155,10 @@ export class Engine {
     if (activeThreeScene) {
       this.renderer.render(activeThreeScene, this.cameraManager.getCamera());
     }
+
+    // End frame profiling and dynamic quality adaptation
+    const metrics = this.profiler.endFrame();
+    this.qualityManager.update(metrics);
 
     // Flush input single-frame signals
     this.inputManager.endFrame();

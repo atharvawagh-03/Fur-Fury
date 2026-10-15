@@ -19,6 +19,7 @@ import { ElowenModel } from '../enemy/ElowenModel';
 import { DialogueManager } from '../narrative/DialogueManager';
 import { EventBus } from '../core/EventBus';
 import { PhotoModeController } from '../camera/PhotoModeController';
+import { DisposalHelper } from '../core/DisposalHelper';
 
 export interface InteractiveEntity {
   id: string;
@@ -518,6 +519,7 @@ export class HubScene implements IScene {
     this.unbindEvents.forEach((unbind) => unbind());
     this.unbindEvents = [];
     this.anuki.dispose();
+    DisposalHelper.disposeHierarchy(this.scene);
     this.scene.clear();
   }
 }

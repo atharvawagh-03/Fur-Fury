@@ -15,6 +15,7 @@ import { ElowenAI } from '../enemy/ElowenAI';
 import { DamageableDummy, DamageableCrate } from '../combat/DamageableProp';
 import { PropFactory } from '../world/PropFactory';
 import { EventBus } from '../core/EventBus';
+import { DisposalHelper } from '../core/DisposalHelper';
 
 export class RosebridgeScene implements IScene {
   public readonly id = 'RosebridgeScene';
@@ -324,6 +325,7 @@ export class RosebridgeScene implements IScene {
     this.unbindEvents.forEach((unbind) => unbind());
     this.unbindEvents = [];
     this.anuki.dispose();
+    DisposalHelper.disposeHierarchy(this.scene);
     this.scene.clear();
   }
 }

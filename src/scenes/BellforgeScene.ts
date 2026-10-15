@@ -15,6 +15,7 @@ import { BrannocAI } from '../enemy/BrannocAI';
 import { DamageableDummy, DamageableCrate } from '../combat/DamageableProp';
 import { PropFactory } from '../world/PropFactory';
 import { EventBus } from '../core/EventBus';
+import { DisposalHelper } from '../core/DisposalHelper';
 
 export class BellforgeScene implements IScene {
   public readonly id = 'BellforgeScene';
@@ -314,6 +315,7 @@ export class BellforgeScene implements IScene {
     this.unbindEvents.forEach((unbind) => unbind());
     this.unbindEvents = [];
     this.anuki.dispose();
+    DisposalHelper.disposeHierarchy(this.scene);
     this.scene.clear();
   }
 }

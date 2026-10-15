@@ -16,6 +16,7 @@ import { CameraManager } from '../camera/CameraManager';
 import { CombatSystem } from '../combat/CombatSystem';
 import { CombatVFX } from '../combat/CombatVFX';
 import { EventBus } from '../core/EventBus';
+import { SettingsManager } from '../settings/SettingsManager';
 
 export interface PlayerStats {
   health: number;
@@ -98,6 +99,14 @@ export class AnukiController {
     // 1. Build 3D Articulated Model
     this.model = new AnukiModel();
     scene.add(this.model.getRoot());
+
+    // Apply active cosmetics from settings
+    const settings = SettingsManager.getInstance().getSettings();
+    this.model.applyCosmetics(settings.selectedArmorFinish, settings.selectedCapeDye);
+
+    this.eventBus.on<{ armor: string; cape: string }>('COSMETICS_CHANGED', (payload) => {
+      this.model.applyCosmetics(payload.armor, payload.cape);
+    });
 
     // 2. Setup Procedural Animator & Effects
     this.animator = new AnukiAnimator(this.model.getRig());

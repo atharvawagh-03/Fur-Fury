@@ -17,6 +17,8 @@ import { LevelProgressionManager, StageId, CAMPAIGN_STAGES } from '../progressio
 import { DialogueManager } from '../narrative/DialogueManager';
 import { LoreCodexManager } from '../narrative/LoreCodexManager';
 import { DialogueNode, LoreEntry } from '../narrative/DialogueTypes';
+import { SettingsManager, DifficultyMode, ParticleDensity, ArmorFinishId, CapeDyeId, ColorFilterId } from '../settings/SettingsManager';
+import { CosmeticsManager } from '../cosmetics/CosmeticsManager';
 
 export interface CinematicStatePayload {
   active: boolean;
@@ -82,6 +84,15 @@ export class UIManager {
   private codexModal: HTMLElement | null = null;
   private loreToast: HTMLElement | null = null;
   private loreToastName: HTMLElement | null = null;
+
+  // Step 9 Settings, Wardrobe & Photo Mode
+  private settingsManager = SettingsManager.getInstance();
+  private cosmeticsManager = CosmeticsManager.getInstance();
+  private settingsModal: HTMLElement | null = null;
+  private photoModeDeck: HTMLElement | null = null;
+  private photoFilterOverlay: HTMLElement | null = null;
+  private activeSettingsTab: string = 'gameplay';
+  private isPhotoModeActive: boolean = false;
 
   // Cinematic UI elements
   private cinematicContainer: HTMLElement | null = null;
@@ -152,13 +163,16 @@ export class UIManager {
             <button class="nav-btn" id="btn-nav-seals">🛡️ Oath Seals</button>
             <button class="nav-btn" id="btn-nav-upgrades">⚡ Skill Tree</button>
             <button class="nav-btn" id="btn-nav-codex">📖 Codex</button>
+            <button class="nav-btn" id="btn-nav-wardrobe">🎨 Wardrobe</button>
+            <button class="nav-btn" id="btn-nav-photo">📸 Photo</button>
+            <button class="nav-btn" id="btn-nav-settings">⚙️ Settings</button>
           </div>
         </header>
 
         <!-- Milestone Badge -->
         <div class="milestone-badge">
-          <span class="pill">STEP 8 ACTIVE</span>
-          <span class="milestone-desc">Storytelling, Dialogue & Interactive Systems</span>
+          <span class="pill">STEP 9 ACTIVE</span>
+          <span class="milestone-desc">UI/UX, Audio, Visual Effects & Game Polish</span>
         </div>
 
         <!-- Oath Seal Celebratory Banner -->
@@ -286,6 +300,64 @@ export class UIManager {
             <span class="toast-entry-name" id="lore-toast-name">Lore Title</span>
           </div>
         </div>
+
+        <!-- Step 9 Master System, Settings & Wardrobe Modal -->
+        <div class="progression-modal" id="modal-settings" style="display: none;">
+          <div class="modal-card settings-card">
+            <div class="modal-header">
+              <h3 id="settings-title">⚙️ Game Settings & Royal Wardrobe</h3>
+              <button class="modal-close-btn" id="btn-close-settings">✕</button>
+            </div>
+            
+            <div class="settings-tab-bar">
+              <button class="tab-btn active" id="tab-btn-gameplay" data-tab="gameplay">⚔️ Gameplay</button>
+              <button class="tab-btn" id="tab-btn-audio" data-tab="audio">🔊 Audio</button>
+              <button class="tab-btn" id="tab-btn-accessibility" data-tab="accessibility">👁️ Accessibility</button>
+              <button class="tab-btn" id="tab-btn-wardrobe" data-tab="wardrobe">🎨 Wardrobe</button>
+              <button class="tab-btn" id="tab-btn-credits" data-tab="credits">📜 Credits</button>
+            </div>
+
+            <div class="settings-content" id="settings-tab-content"></div>
+          </div>
+        </div>
+
+        <!-- Step 9 Photo Mode Control Deck -->
+        <div class="photo-mode-deck" id="photo-mode-deck" style="display: none;">
+          <div class="photo-deck-header">
+            <span class="photo-mode-title">📸 CINEMATIC PHOTO MODE</span>
+            <div class="photo-deck-actions">
+              <button class="btn-deck-action" id="btn-photo-hide-ui">👁️ Hide HUD (H)</button>
+              <button class="btn-deck-action btn-danger" id="btn-photo-exit">✕ Exit (P / ESC)</button>
+            </div>
+          </div>
+          <div class="photo-controls-row">
+            <div class="slider-control">
+              <label>FOV (<span id="photo-fov-val">50</span>°)</label>
+              <input type="range" id="photo-slider-fov" min="25" max="90" value="50" />
+            </div>
+            <div class="slider-control">
+              <label>Roll (<span id="photo-roll-val">0</span>°)</label>
+              <input type="range" id="photo-slider-roll" min="-45" max="45" value="0" />
+            </div>
+            <div class="slider-control">
+              <label>Vignette (<span id="photo-vig-val">25</span>%)</label>
+              <input type="range" id="photo-slider-vignette" min="0" max="100" value="25" />
+            </div>
+            <div class="filter-btn-group">
+              <label>Color Filter</label>
+              <div class="filter-chips">
+                <button class="filter-chip active" data-filter="NONE">None</button>
+                <button class="filter-chip" data-filter="GOLDEN_HOUR">Golden Hour</button>
+                <button class="filter-chip" data-filter="NOIR">Noir</button>
+                <button class="filter-chip" data-filter="MYTHIC">Mythic</button>
+                <button class="filter-chip" data-filter="VIBRANT">Vibrant</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 9 Photo Mode Fullscreen Filter Overlay -->
+        <div class="photo-filter-overlay" id="photo-filter-overlay" style="display: none;"></div>
 
         <!-- Dynamic Floating Combo Counter -->
         <div class="combo-counter-banner" id="combo-banner" style="display: none;">
@@ -467,6 +539,11 @@ export class UIManager {
     this.loreToast = document.getElementById('lore-discovered-toast');
     this.loreToastName = document.getElementById('lore-toast-name');
 
+    // Step 9 Settings & Photo Mode Elements
+    this.settingsModal = document.getElementById('modal-settings');
+    this.photoModeDeck = document.getElementById('photo-mode-deck');
+    this.photoFilterOverlay = document.getElementById('photo-filter-overlay');
+
     this.attachDomListeners();
   }
 
@@ -512,6 +589,42 @@ export class UIManager {
       if (this.codexModal) this.codexModal.style.display = 'none';
       this.audioManager.playUiClick();
     });
+
+    // Step 9 Settings & Wardrobe Triggers
+    document.getElementById('btn-nav-settings')?.addEventListener('click', () => {
+      this.audioManager.playUiClick();
+      this.openSettingsModal('gameplay');
+    });
+
+    document.getElementById('btn-nav-wardrobe')?.addEventListener('click', () => {
+      this.audioManager.playUiClick();
+      this.openSettingsModal('wardrobe');
+    });
+
+    document.getElementById('btn-close-settings')?.addEventListener('click', () => {
+      if (this.settingsModal) this.settingsModal.style.display = 'none';
+      this.audioManager.playUiClick();
+    });
+
+    // Settings Tab Switchers
+    document.querySelectorAll<HTMLButtonElement>('.settings-tab-bar .tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tab = btn.getAttribute('data-tab');
+        if (tab) {
+          this.audioManager.playUiClick();
+          this.switchSettingsTab(tab);
+        }
+      });
+    });
+
+    // Photo Mode Trigger
+    document.getElementById('btn-nav-photo')?.addEventListener('click', () => {
+      this.audioManager.playUiClick();
+      this.eventBus.emit('TOGGLE_PHOTO_MODE');
+    });
+
+    // Photo Mode Deck Controls
+    this.setupPhotoModeControls();
 
     // Step 8 Dialogue overlay advance and keyboard listeners
     this.dialogueDeckOverlay?.addEventListener('click', (e) => {
@@ -1184,6 +1297,411 @@ export class UIManager {
         `;
       })
       .join('');
+  }
+
+  public openSettingsModal(defaultTab?: string): void {
+    if (!this.settingsModal) return;
+    this.switchSettingsTab(defaultTab || this.activeSettingsTab);
+    this.settingsModal.style.display = 'flex';
+  }
+
+  private switchSettingsTab(tab: string): void {
+    this.activeSettingsTab = tab;
+    document.querySelectorAll('.settings-tab-bar .tab-btn').forEach((b) => {
+      if (b.getAttribute('data-tab') === tab) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+    this.renderSettingsContent(tab);
+  }
+
+  private renderSettingsContent(tab: string): void {
+    const container = document.getElementById('settings-tab-content');
+    if (!container) return;
+
+    const s = this.settingsManager.getSettings();
+
+    if (tab === 'gameplay') {
+      container.innerHTML = `
+        <div class="settings-pane">
+          <h4 class="settings-section-title">Difficulty Presets (PRD FR-07)</h4>
+          <p class="settings-desc">Adjust enemy aggression, parry timing tolerances, and damage scaling.</p>
+          <div class="difficulty-cards-row">
+            <div class="diff-card ${s.difficulty === 'STORY' ? 'active' : ''}" data-diff="STORY">
+              <span class="diff-icon">📖</span>
+              <span class="diff-name">STORY</span>
+              <span class="diff-spec">0.7x Damage • 0.28s Parry Window</span>
+              <p>Generous timing and reduced damage for narrative immersion.</p>
+            </div>
+            <div class="diff-card ${s.difficulty === 'KNIGHT' ? 'active' : ''}" data-diff="KNIGHT">
+              <span class="diff-icon">⚔️</span>
+              <span class="diff-name">KNIGHT</span>
+              <span class="diff-spec">1.0x Damage • 0.22s Parry Window</span>
+              <p>The authentic, balanced developer vision from the PRD.</p>
+            </div>
+            <div class="diff-card ${s.difficulty === 'LEGEND' ? 'active' : ''}" data-diff="LEGEND">
+              <span class="diff-icon">👑</span>
+              <span class="diff-name">LEGEND</span>
+              <span class="diff-spec">1.35x Damage • 0.16s Tight Window</span>
+              <p>Demanding precision parries and fierce knight AI aggression.</p>
+            </div>
+          </div>
+
+          <div class="toggle-setting-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Parry Timing Assist (+50ms Buffer)</span>
+              <span class="toggle-sub">Widens the riposte trigger window for accessibility.</span>
+            </div>
+            <input type="checkbox" id="chk-parry-assist" ${s.parryTimingAssist ? 'checked' : ''} />
+          </div>
+        </div>
+      `;
+
+      // Attach difficulty clickers
+      container.querySelectorAll('.diff-card[data-diff]').forEach((card) => {
+        card.addEventListener('click', () => {
+          const diff = card.getAttribute('data-diff') as DifficultyMode;
+          this.settingsManager.setDifficulty(diff);
+          this.audioManager.playUiClick();
+          this.renderSettingsContent('gameplay');
+        });
+      });
+
+      document.getElementById('chk-parry-assist')?.addEventListener('change', (e) => {
+        this.settingsManager.setParryAssist((e.target as HTMLInputElement).checked);
+        this.audioManager.playUiClick();
+      });
+
+    } else if (tab === 'audio') {
+      container.innerHTML = `
+        <div class="settings-pane">
+          <h4 class="settings-section-title">Audio Bus Mix (PRD Section 15 & 16)</h4>
+          <p class="settings-desc">Independent master, orchestral score, combat SFX, and voiced speech buses.</p>
+          
+          <div class="audio-slider-row">
+            <div class="slider-head">
+              <span>Master Volume</span>
+              <span id="txt-vol-master">${s.masterVolume}%</span>
+            </div>
+            <input type="range" min="0" max="100" value="${s.masterVolume}" id="slider-vol-master" />
+          </div>
+
+          <div class="audio-slider-row">
+            <div class="slider-head">
+              <span>Music & Themes (Music-Box & Orchestral)</span>
+              <span id="txt-vol-music">${s.musicVolume}%</span>
+            </div>
+            <input type="range" min="0" max="100" value="${s.musicVolume}" id="slider-vol-music" />
+            <button class="test-audio-btn" id="btn-test-music">▶ Test Music-Box Motif</button>
+          </div>
+
+          <div class="audio-slider-row">
+            <div class="slider-head">
+              <span>Sound Effects (Sword Hits & Parries)</span>
+              <span id="txt-vol-sfx">${s.sfxVolume}%</span>
+            </div>
+            <input type="range" min="0" max="100" value="${s.sfxVolume}" id="slider-vol-sfx" />
+            <button class="test-audio-btn" id="btn-test-sfx">▶ Test Steel Clang</button>
+          </div>
+
+          <div class="audio-slider-row">
+            <div class="slider-head">
+              <span>Voice & Dialogue Tones</span>
+              <span id="txt-vol-voice">${s.voiceVolume}%</span>
+            </div>
+            <input type="range" min="0" max="100" value="${s.voiceVolume}" id="slider-vol-voice" />
+            <button class="test-audio-btn" id="btn-test-voice">▶ Test Kitten Chirp</button>
+          </div>
+        </div>
+      `;
+
+      // Sliders
+      const bindSlider = (id: string, labelId: string, channel: 'master' | 'music' | 'sfx' | 'voice') => {
+        document.getElementById(id)?.addEventListener('input', (e) => {
+          const val = parseInt((e.target as HTMLInputElement).value, 10);
+          const label = document.getElementById(labelId);
+          if (label) label.textContent = `${val}%`;
+          this.settingsManager.setAudioVolume(channel, val);
+        });
+      };
+      bindSlider('slider-vol-master', 'txt-vol-master', 'master');
+      bindSlider('slider-vol-music', 'txt-vol-music', 'music');
+      bindSlider('slider-vol-sfx', 'txt-vol-sfx', 'sfx');
+      bindSlider('slider-vol-voice', 'txt-vol-voice', 'voice');
+
+      document.getElementById('btn-test-music')?.addEventListener('click', () => {
+        this.audioManager.unlock();
+        this.audioManager.playMusicBoxMotif();
+      });
+
+      document.getElementById('btn-test-sfx')?.addEventListener('click', () => {
+        this.audioManager.unlock();
+        this.audioManager.playParryClang();
+      });
+
+      document.getElementById('btn-test-voice')?.addEventListener('click', () => {
+        this.audioManager.unlock();
+        this.audioManager.playDialogueVoice('cat_chirp');
+      });
+
+    } else if (tab === 'accessibility') {
+      container.innerHTML = `
+        <div class="settings-pane">
+          <h4 class="settings-section-title">Accessibility & Visual Controls (PRD Section 15)</h4>
+          <p class="settings-desc">Customizable visual intensity, contrast options, and camera motion reduction.</p>
+
+          <div class="audio-slider-row">
+            <div class="slider-head">
+              <span>Camera Screenshake Intensity</span>
+              <span id="txt-camera-shake">${s.cameraShake}%</span>
+            </div>
+            <input type="range" min="0" max="100" value="${s.cameraShake}" id="slider-camera-shake" />
+          </div>
+
+          <div class="toggle-setting-row">
+            <div class="toggle-info">
+              <span class="toggle-label">High-Contrast Text</span>
+              <span class="toggle-sub">Enforces pure white/gold text on deep black backdrops.</span>
+            </div>
+            <input type="checkbox" id="chk-high-contrast" ${s.highContrastText ? 'checked' : ''} />
+          </div>
+
+          <div class="toggle-setting-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Large Narrative Subtitles</span>
+              <span class="toggle-sub">Increases cinematic and dialogue font size by +25%.</span>
+            </div>
+            <input type="checkbox" id="chk-large-subs" ${s.largeSubtitles ? 'checked' : ''} />
+          </div>
+
+          <div class="toggle-setting-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Particle Density</span>
+              <span class="toggle-sub">Scales back sparks and dust for performance and comfort.</span>
+            </div>
+            <div class="density-btn-group">
+              <button class="density-btn ${s.particleDensity === 'LOW' ? 'active' : ''}" data-density="LOW">Low</button>
+              <button class="density-btn ${s.particleDensity === 'MEDIUM' ? 'active' : ''}" data-density="MEDIUM">Medium</button>
+              <button class="density-btn ${s.particleDensity === 'HIGH' ? 'active' : ''}" data-density="HIGH">High</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('slider-camera-shake')?.addEventListener('input', (e) => {
+        const val = parseInt((e.target as HTMLInputElement).value, 10);
+        const lbl = document.getElementById('txt-camera-shake');
+        if (lbl) lbl.textContent = `${val}%`;
+        this.settingsManager.setCameraShake(val);
+      });
+
+      document.getElementById('chk-high-contrast')?.addEventListener('change', (e) => {
+        const checked = (e.target as HTMLInputElement).checked;
+        this.settingsManager.setHighContrastText(checked);
+        document.body.classList.toggle('high-contrast-mode', checked);
+        this.audioManager.playUiClick();
+      });
+
+      document.getElementById('chk-large-subs')?.addEventListener('change', (e) => {
+        const checked = (e.target as HTMLInputElement).checked;
+        this.settingsManager.setLargeSubtitles(checked);
+        document.body.classList.toggle('large-subtitles-mode', checked);
+        this.audioManager.playUiClick();
+      });
+
+      container.querySelectorAll('.density-btn[data-density]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const d = btn.getAttribute('data-density') as ParticleDensity;
+          this.settingsManager.setParticleDensity(d);
+          this.audioManager.playUiClick();
+          this.renderSettingsContent('accessibility');
+        });
+      });
+
+    } else if (tab === 'wardrobe') {
+      const armors = this.cosmeticsManager.getArmorFinishes();
+      const capes = this.cosmeticsManager.getCapeDyes();
+      const currentArmor = this.cosmeticsManager.getSelectedArmor();
+      const currentCape = this.cosmeticsManager.getSelectedCape();
+
+      container.innerHTML = `
+        <div class="settings-pane">
+          <h4 class="settings-section-title">Lady Anuki’s Royal Wardrobe (PRD Section 14)</h4>
+          <p class="settings-desc">Craftable armor finishes and embroidered cape dyes unlocked across Veyrholm.</p>
+
+          <h5 class="wardrobe-subhead">Knightly Plate Armor Finish</h5>
+          <div class="cosmetic-cards-grid">
+            ${armors.map((a) => `
+              <div class="cosmetic-card ${a.id === currentArmor ? 'selected' : ''}" data-armor="${a.id}">
+                <div class="cosmetic-header">
+                  <span class="cosmetic-icon">${a.previewIcon}</span>
+                  <div class="cosmetic-names">
+                    <span class="cosmetic-title">${a.name}</span>
+                    <span class="cosmetic-tagline">${a.tagline}</span>
+                  </div>
+                </div>
+                <p class="cosmetic-desc">${a.description}</p>
+                <button class="btn-select-cosmetic">${a.id === currentArmor ? '✓ Equipped' : 'Equip Finish'}</button>
+              </div>
+            `).join('')}
+          </div>
+
+          <h5 class="wardrobe-subhead" style="margin-top: 1.5rem;">Ivory Silk Cape Dye</h5>
+          <div class="cosmetic-cards-grid">
+            ${capes.map((c) => `
+              <div class="cosmetic-card ${c.id === currentCape ? 'selected' : ''}" data-cape="${c.id}">
+                <div class="cosmetic-header">
+                  <span class="cosmetic-icon">${c.previewIcon}</span>
+                  <div class="cosmetic-names">
+                    <span class="cosmetic-title">${c.name}</span>
+                    <span class="cosmetic-tagline">${c.tagline}</span>
+                  </div>
+                </div>
+                <p class="cosmetic-desc">${c.description}</p>
+                <button class="btn-select-cosmetic">${c.id === currentCape ? '✓ Equipped' : 'Equip Dye'}</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      container.querySelectorAll('.cosmetic-card[data-armor]').forEach((card) => {
+        card.addEventListener('click', () => {
+          const aId = card.getAttribute('data-armor') as ArmorFinishId;
+          this.cosmeticsManager.selectArmor(aId);
+          this.audioManager.playUiClick();
+          this.renderSettingsContent('wardrobe');
+        });
+      });
+
+      container.querySelectorAll('.cosmetic-card[data-cape]').forEach((card) => {
+        card.addEventListener('click', () => {
+          const cId = card.getAttribute('data-cape') as CapeDyeId;
+          this.cosmeticsManager.selectCape(cId);
+          this.audioManager.playUiClick();
+          this.renderSettingsContent('wardrobe');
+        });
+      });
+
+    } else if (tab === 'credits') {
+      container.innerHTML = `
+        <div class="settings-pane credits-pane">
+          <div class="credits-crest">🐱👑🐉</div>
+          <h2 class="credits-title">${GameConfig.TITLE}</h2>
+          <p class="credits-tagline">“${GameConfig.TAGLINE}”</p>
+          <hr class="credits-divider" />
+          <div class="credits-block">
+            <h4>DIRECTOR & CREATIVE LEAD</h4>
+            <p>Atharva Wagh & The DeepMind Advanced Agentic Engineering Team</p>
+          </div>
+          <div class="credits-block">
+            <h4>HEROIC PROTAGONIST</h4>
+            <p><strong>Lady Anuki</strong> • The Crimson Claw • Knight of the Pink Bow</p>
+          </div>
+          <div class="credits-block">
+            <h4>DRAGON COMPANION</h4>
+            <p><strong>Rhazakar the Unbroken</strong> • Colossal Scarlet Dragon</p>
+          </div>
+          <div class="credits-block">
+            <h4>THE EIGHT GUARDIANS & CHIEFS OF VEYRHOLM</h4>
+            <p>Sir Garrick Ironjaw • Dame Elowen Vale • Sir Brannoc Cinderhand</p>
+            <p>Sir Lucien the Pale • Dame Ysara Blackthorn • Sir Caelum Stormcrest</p>
+            <p>Sir Oren the Gilded • Marshal Varric Ashbane • Regent Aldric Voss</p>
+          </div>
+          <div class="credits-block">
+            <h4>ORIGINAL SCORE & SOUND DESIGN</h4>
+            <p>Procedural Web Audio Synthesizers • High-Octane Boss Drums & Delicate Music-Box Motif</p>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  private setupPhotoModeControls(): void {
+    const fovSlider = document.getElementById('photo-slider-fov') as HTMLInputElement | null;
+    const rollSlider = document.getElementById('photo-slider-roll') as HTMLInputElement | null;
+    const vigSlider = document.getElementById('photo-slider-vignette') as HTMLInputElement | null;
+
+    fovSlider?.addEventListener('input', (e) => {
+      const val = parseInt((e.target as HTMLInputElement).value, 10);
+      const lbl = document.getElementById('photo-fov-val');
+      if (lbl) lbl.textContent = `${val}`;
+      this.eventBus.emit('SET_PHOTO_FOV', val);
+    });
+
+    rollSlider?.addEventListener('input', (e) => {
+      const val = parseInt((e.target as HTMLInputElement).value, 10);
+      const lbl = document.getElementById('photo-roll-val');
+      if (lbl) lbl.textContent = `${val}`;
+      this.eventBus.emit('SET_PHOTO_ROLL', val);
+    });
+
+    vigSlider?.addEventListener('input', (e) => {
+      const val = parseInt((e.target as HTMLInputElement).value, 10);
+      const lbl = document.getElementById('photo-vig-val');
+      if (lbl) lbl.textContent = `${val}`;
+      this.updateVignetteOverlay(val);
+    });
+
+    // Color filter chips
+    document.querySelectorAll('.filter-chip[data-filter]').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach((c) => c.classList.remove('active'));
+        chip.classList.add('active');
+        const filter = chip.getAttribute('data-filter') as ColorFilterId;
+        this.applyPhotoFilter(filter);
+        this.audioManager.playUiClick();
+      });
+    });
+
+    // Hide UI button
+    document.getElementById('btn-photo-hide-ui')?.addEventListener('click', () => {
+      this.togglePhotoModeHideUi();
+    });
+
+    // Exit photo mode button
+    document.getElementById('btn-photo-exit')?.addEventListener('click', () => {
+      this.eventBus.emit('TOGGLE_PHOTO_MODE');
+    });
+
+    // Handle incoming Photo Mode events
+    this.eventBus.on<{ active: boolean }>('PHOTO_MODE_STATE', (payload) => {
+      this.isPhotoModeActive = payload.active;
+      if (this.photoModeDeck) {
+        this.photoModeDeck.style.display = payload.active ? 'flex' : 'none';
+      }
+      if (this.photoFilterOverlay) {
+        this.photoFilterOverlay.style.display = payload.active ? 'block' : 'none';
+      }
+    });
+
+    // Global Key Listener for Photo Mode (P) and Hide UI (H)
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyP') {
+        if (!this.dialogueManager.isActive()) {
+          this.eventBus.emit('TOGGLE_PHOTO_MODE');
+        }
+      } else if (e.code === 'KeyH' && this.isPhotoModeActive) {
+        this.togglePhotoModeHideUi();
+      }
+    });
+  }
+
+  private togglePhotoModeHideUi(): void {
+    const isCurrentlyHidden = document.body.classList.contains('photo-mode-hidden-ui');
+    document.body.classList.toggle('photo-mode-hidden-ui', !isCurrentlyHidden);
+  }
+
+  private applyPhotoFilter(filter: ColorFilterId): void {
+    if (!this.photoFilterOverlay) return;
+    this.photoFilterOverlay.className = 'photo-filter-overlay';
+    if (filter !== 'NONE') {
+      this.photoFilterOverlay.classList.add(`filter-${filter.toLowerCase()}`);
+    }
+  }
+
+  private updateVignetteOverlay(amount: number): void {
+    if (!this.photoFilterOverlay) return;
+    this.photoFilterOverlay.style.boxShadow = `inset 0 0 ${amount * 2.5}px rgba(0, 0, 0, ${amount / 100})`;
   }
 
   public update(): void {

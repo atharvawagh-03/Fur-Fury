@@ -22,6 +22,8 @@ import { DamageableDummy, DamageableCrate } from '../combat/DamageableProp';
 import { PropFactory } from '../world/PropFactory';
 import { GarrickModel } from '../enemy/GarrickModel';
 import { GarrickAI } from '../enemy/GarrickAI';
+import { PhotoModeController } from '../camera/PhotoModeController';
+import { VFXManager } from '../effects/VFXManager';
 
 export type ActiveCameraMode = 'THIRD_PERSON' | 'CINEMATIC';
 
@@ -46,6 +48,10 @@ export class ArenaScene implements IScene {
 
   // Step 6 Human Knight Boss (Sir Garrick Ironjaw)
   private garrick!: GarrickAI;
+
+  // Step 9 Photo Mode & VFX Subsystems
+  private photoMode!: PhotoModeController;
+  private vfxManager!: VFXManager;
 
   private cameraMode: ActiveCameraMode = 'THIRD_PERSON';
   private eventBus = EventBus.getInstance();
@@ -161,6 +167,29 @@ export class ArenaScene implements IScene {
       this.eventBus.emit('CAMERA_MODE_CHANGED', this.cameraMode);
     });
     this.unbindEvents.push(unbindOrbit);
+
+    // Step 9 Photo Mode & VFX Subsystems
+    this.photoMode = new PhotoModeController(context.cameraManager);
+    this.vfxManager = new VFXManager(this.scene, context.cameraManager);
+
+    const unbindPhoto = this.eventBus.on<void>('TOGGLE_PHOTO_MODE', () => {
+      if (this.photoMode.isPhotoModeActive()) {
+        this.photoMode.deactivate();
+      } else {
+        this.photoMode.activate(this.anuki.getPosition());
+      }
+    });
+    this.unbindEvents.push(unbindPhoto);
+
+    const unbindPhotoFov = this.eventBus.on<number>('SET_PHOTO_FOV', (fov) => {
+      this.photoMode.setFov(fov);
+    });
+    this.unbindEvents.push(unbindPhotoFov);
+
+    const unbindPhotoRoll = this.eventBus.on<number>('SET_PHOTO_ROLL', (roll) => {
+      this.photoMode.setRoll(roll);
+    });
+    this.unbindEvents.push(unbindPhotoRoll);
 
     const unbindSpawn = this.eventBus.on<void>('SPAWN_PHYSICS_PROP', () => {
       this.spawnInteractiveBoulder();
@@ -366,6 +395,15 @@ export class ArenaScene implements IScene {
       // Update atmosphere
       this.environment.update(deltaTime, this.elapsedTime);
       this.arena.update(deltaTime, this.elapsedTime);
+      return;
+    }
+
+    // Step 9 VFX Manager update
+    this.vfxManager.update(deltaTime);
+
+    // If Photo Mode is active, freeze world animation and update photo camera
+    if (this.photoMode.isPhotoModeActive()) {
+      this.photoMode.update();
       return;
     }
 

@@ -10,6 +10,7 @@ export class AudioManager {
   private masterGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
+  private voiceGain: GainNode | null = null;
   private isUnlocked: boolean = false;
   public get unlocked(): boolean {
     return this.isUnlocked;
@@ -37,6 +38,10 @@ export class AudioManager {
       this.sfxGain = this.ctx.createGain();
       this.sfxGain.gain.value = GameConfig.AUDIO.SFX_VOLUME;
       this.sfxGain.connect(this.masterGain);
+
+      this.voiceGain = this.ctx.createGain();
+      this.voiceGain.gain.value = 0.9;
+      this.voiceGain.connect(this.masterGain);
     }
 
     if (this.ctx.state === 'suspended') {
@@ -538,6 +543,48 @@ export class AudioManager {
   }
 
   public setMasterVolume(val: number): void {
-    if (this.masterGain) this.masterGain.gain.value = Math.max(0, Math.min(1, val));
+    const norm = val > 1 ? val / 100 : val;
+    if (this.masterGain) this.masterGain.gain.value = Math.max(0, Math.min(1, norm));
+  }
+
+  public setMusicVolume(val: number): void {
+    const norm = val > 1 ? val / 100 : val;
+    if (this.musicGain) this.musicGain.gain.value = Math.max(0, Math.min(1, norm));
+  }
+
+  public setSfxVolume(val: number): void {
+    const norm = val > 1 ? val / 100 : val;
+    if (this.sfxGain) this.sfxGain.gain.value = Math.max(0, Math.min(1, norm));
+  }
+
+  public setVoiceVolume(val: number): void {
+    const norm = val > 1 ? val / 100 : val;
+    if (this.voiceGain) this.voiceGain.gain.value = Math.max(0, Math.min(1, norm));
+  }
+
+  /**
+   * Delicate music-box fantasy motif for Lady Anuki (PRD Section 16)
+   */
+  public playMusicBoxMotif(): void {
+    if (!this.ctx || !this.musicGain) {
+      this.initContext();
+      if (!this.ctx || !this.musicGain) return;
+    }
+    const t = this.ctx.currentTime;
+    // Music box sequence: Eb5, G5, Bb5, C6, G5, Eb5
+    const notes = [622.25, 783.99, 932.33, 1046.50, 783.99, 622.25];
+    notes.forEach((freq, i) => {
+      if (!this.ctx || !this.musicGain) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + i * 0.28);
+      gain.gain.setValueAtTime(0.08, t + i * 0.28);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.28 + 0.6);
+      osc.connect(gain);
+      gain.connect(this.musicGain);
+      osc.start(t + i * 0.28);
+      osc.stop(t + i * 0.28 + 0.6);
+    });
   }
 }

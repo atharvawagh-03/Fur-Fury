@@ -59,6 +59,9 @@ export interface AnukiRig {
 export class AnukiModel {
   private group: THREE.Group;
   private rig!: AnukiRig;
+  private cuirassMaterial!: THREE.MeshStandardMaterial;
+  private greavesMaterial!: THREE.MeshStandardMaterial;
+  private capeMaterial!: THREE.MeshStandardMaterial;
 
   constructor() {
     this.group = new THREE.Group();
@@ -72,6 +75,55 @@ export class AnukiModel {
 
   public getRig(): AnukiRig {
     return this.rig;
+  }
+
+  public applyCosmetics(armorFinish: string, capeDye: string): void {
+    if (this.cuirassMaterial) {
+      if (armorFinish === 'SILVER_ENGRAVED') {
+        this.cuirassMaterial.color.setHex(0xffffff);
+        this.cuirassMaterial.roughness = 0.25;
+        this.cuirassMaterial.metalness = 0.90;
+      } else if (armorFinish === 'GOLDEN_SUN') {
+        this.cuirassMaterial.color.setHex(0xffd700);
+        this.cuirassMaterial.roughness = 0.20;
+        this.cuirassMaterial.metalness = 0.95;
+      } else if (armorFinish === 'OBSIDIAN_NIGHT') {
+        this.cuirassMaterial.color.setHex(0x383842);
+        this.cuirassMaterial.roughness = 0.30;
+        this.cuirassMaterial.metalness = 0.85;
+      }
+      this.cuirassMaterial.needsUpdate = true;
+    }
+
+    if (this.greavesMaterial) {
+      if (armorFinish === 'SILVER_ENGRAVED') {
+        this.greavesMaterial.color.setHex(0xffffff);
+        this.greavesMaterial.roughness = 0.25;
+        this.greavesMaterial.metalness = 0.90;
+      } else if (armorFinish === 'GOLDEN_SUN') {
+        this.greavesMaterial.color.setHex(0xffd700);
+        this.greavesMaterial.roughness = 0.20;
+        this.greavesMaterial.metalness = 0.95;
+      } else if (armorFinish === 'OBSIDIAN_NIGHT') {
+        this.greavesMaterial.color.setHex(0x383842);
+        this.greavesMaterial.roughness = 0.30;
+        this.greavesMaterial.metalness = 0.85;
+      }
+      this.greavesMaterial.needsUpdate = true;
+    }
+
+    if (this.capeMaterial) {
+      if (capeDye === 'IVORY_PEARL') {
+        this.capeMaterial.color.setHex(0xfffef9);
+      } else if (capeDye === 'ROYAL_CRIMSON') {
+        this.capeMaterial.color.setHex(0x9e1b26);
+      } else if (capeDye === 'VEYRHOLM_NAVY') {
+        this.capeMaterial.color.setHex(0x1e3a5f);
+      } else if (capeDye === 'AMETHYST_VELVET') {
+        this.capeMaterial.color.setHex(0x5b2c6f);
+      }
+      this.capeMaterial.needsUpdate = true;
+    }
   }
 
   public getSwordTipWorldPosition(out: THREE.Vector3): void {
@@ -100,6 +152,10 @@ export class AnukiModel {
     const goldMat = AnukiMaterials.createGoldTrimMaterial();
     const steelMat = AnukiMaterials.createSteelBladeMaterial();
     const gemMat = AnukiMaterials.createRubyGemMaterial();
+
+    this.cuirassMaterial = cuirassMat;
+    this.greavesMaterial = greavesMat;
+    this.capeMaterial = capeMat;
 
     // 1. Root and Hips Pivot
     const root = new THREE.Group();

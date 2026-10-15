@@ -20,6 +20,7 @@ export interface SaveData {
     position: [number, number, number];
   };
   dialogueFlags: Record<string, boolean>;
+  settings?: any;
   timestamp: number;
 }
 
@@ -38,6 +39,7 @@ export const InitialSaveData: SaveData = {
     position: [0, 0, 0],
   },
   dialogueFlags: {},
+  settings: null,
   timestamp: Date.now(),
 };
 

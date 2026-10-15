@@ -18,6 +18,7 @@ import { GarrickModel } from '../enemy/GarrickModel';
 import { ElowenModel } from '../enemy/ElowenModel';
 import { DialogueManager } from '../narrative/DialogueManager';
 import { EventBus } from '../core/EventBus';
+import { PhotoModeController } from '../camera/PhotoModeController';
 
 export interface InteractiveEntity {
   id: string;
@@ -41,6 +42,7 @@ export class HubScene implements IScene {
   private interactiveEntities: InteractiveEntity[] = [];
   private nearestEntity: InteractiveEntity | null = null;
   private dialogueManager!: DialogueManager;
+  private photoMode!: PhotoModeController;
 
   // Visuals & Atmosphere
   private fountainWater!: THREE.Mesh;
@@ -131,6 +133,28 @@ export class HubScene implements IScene {
       this.eventBus.emit('LOCK_ON_STATE', isLocked);
     });
     this.unbindEvents.push(unbindLockOn);
+
+    // Step 9 Photo Mode Subsystem
+    this.photoMode = new PhotoModeController(context.cameraManager);
+
+    const unbindPhoto = this.eventBus.on<void>('TOGGLE_PHOTO_MODE', () => {
+      if (this.photoMode.isPhotoModeActive()) {
+        this.photoMode.deactivate();
+      } else {
+        this.photoMode.activate(this.anuki.getPosition());
+      }
+    });
+    this.unbindEvents.push(unbindPhoto);
+
+    const unbindPhotoFov = this.eventBus.on<number>('SET_PHOTO_FOV', (fov) => {
+      this.photoMode.setFov(fov);
+    });
+    this.unbindEvents.push(unbindPhotoFov);
+
+    const unbindPhotoRoll = this.eventBus.on<number>('SET_PHOTO_ROLL', (roll) => {
+      this.photoMode.setRoll(roll);
+    });
+    this.unbindEvents.push(unbindPhotoRoll);
   }
 
   private buildSanctuaryArchitecture(): void {
@@ -412,6 +436,11 @@ export class HubScene implements IScene {
   }
 
   public update(deltaTime: number): void {
+    if (this.photoMode.isPhotoModeActive()) {
+      this.photoMode.update();
+      return;
+    }
+
     this.elapsedTime += deltaTime;
 
     // Subtle water ripple

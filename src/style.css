@@ -1962,6 +1962,611 @@ html, body {
   color: #ffffff;
 }
 
+/* =====================================================================
+   STEP 9: UI/UX, AUDIO, VISUAL EFFECTS, AND GAME POLISH
+   ===================================================================== */
+
+/* Settings & Wardrobe Modal */
+.modal-card.settings-card {
+  max-width: 950px;
+  width: 92vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-tab-bar {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1.5px solid rgba(229, 184, 94, 0.25);
+  padding-bottom: 0.8rem;
+  margin-bottom: 1.2rem;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  background: rgba(28, 16, 22, 0.6);
+  border: 1px solid rgba(229, 184, 94, 0.3);
+  color: #c9b4a4;
+  font-family: var(--font-title);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.55rem 1.1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  background: rgba(45, 26, 35, 0.9);
+  color: #ffffff;
+  border-color: rgba(255, 215, 0, 0.6);
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #d4a017, #8a5700);
+  border-color: #ffd700;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+}
+
+.settings-content {
+  overflow-y: auto;
+  max-height: 58vh;
+  padding-right: 0.5rem;
+}
+
+.settings-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.settings-section-title {
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffd700;
+  margin: 0;
+}
+
+.settings-desc {
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  color: #d1b89d;
+  margin: -0.6rem 0 0.4rem 0;
+}
+
+/* Difficulty Cards */
+.difficulty-cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.diff-card {
+  background: rgba(24, 15, 20, 0.85);
+  border: 1.5px solid rgba(229, 184, 94, 0.3);
+  border-radius: 10px;
+  padding: 1.2rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.diff-card:hover {
+  border-color: rgba(255, 215, 0, 0.6);
+  transform: translateY(-2px);
+  background: rgba(38, 22, 28, 0.95);
+}
+
+.diff-card.active {
+  border-color: #ffd700;
+  background: linear-gradient(135deg, rgba(48, 26, 36, 0.95), rgba(30, 16, 24, 0.98));
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.diff-card .diff-icon {
+  font-size: 2.2rem;
+}
+
+.diff-card .diff-name {
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.diff-card .diff-spec {
+  font-family: var(--font-title);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.12);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.diff-card p {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: #b5a396;
+  margin: 0.4rem 0 0 0;
+  line-height: 1.4;
+}
+
+/* Toggle Setting Rows */
+.toggle-setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(24, 15, 20, 0.6);
+  border: 1px solid rgba(229, 184, 94, 0.2);
+  border-radius: 8px;
+  padding: 0.8rem 1.2rem;
+}
+
+.toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.toggle-label {
+  font-family: var(--font-title);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.toggle-sub {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: #a89484;
+}
+
+.toggle-setting-row input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: #ffd700;
+  cursor: pointer;
+}
+
+/* Audio & Slider Controls */
+.audio-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: rgba(24, 15, 20, 0.6);
+  border: 1px solid rgba(229, 184, 94, 0.2);
+  border-radius: 8px;
+  padding: 0.8rem 1.2rem;
+}
+
+.audio-slider-row .slider-head {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-title);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.audio-slider-row input[type="range"] {
+  accent-color: #ffd700;
+  cursor: pointer;
+  width: 100%;
+}
+
+.test-audio-btn {
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  color: #ffd700;
+  font-family: var(--font-title);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.35rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  width: fit-content;
+  margin-top: 0.2rem;
+  transition: all 0.2s ease;
+}
+
+.test-audio-btn:hover {
+  background: rgba(255, 215, 0, 0.25);
+  transform: translateY(-1px);
+}
+
+.density-btn-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.density-btn {
+  background: rgba(35, 22, 28, 0.8);
+  border: 1px solid rgba(229, 184, 94, 0.3);
+  color: #c9b4a4;
+  font-family: var(--font-title);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.density-btn.active {
+  background: #ffd700;
+  color: #1a0808;
+  border-color: #ffd700;
+}
+
+/* Wardrobe Tab */
+.wardrobe-subhead {
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e5b85e;
+  margin: 0;
+  letter-spacing: 0.05em;
+}
+
+.cosmetic-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.cosmetic-card {
+  background: rgba(28, 18, 22, 0.85);
+  border: 1.5px solid rgba(229, 184, 94, 0.3);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cosmetic-card:hover {
+  border-color: rgba(255, 215, 0, 0.6);
+  transform: translateY(-2px);
+}
+
+.cosmetic-card.selected {
+  border-color: #ffd700;
+  background: linear-gradient(135deg, rgba(42, 24, 32, 0.95), rgba(28, 14, 20, 0.98));
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.25);
+}
+
+.cosmetic-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.cosmetic-icon {
+  font-size: 1.8rem;
+}
+
+.cosmetic-names {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.cosmetic-title {
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.cosmetic-tagline {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: #ffd700;
+  font-style: italic;
+}
+
+.cosmetic-desc {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: #cbb49e;
+  line-height: 1.45;
+  margin: 0;
+  flex: 1;
+}
+
+.btn-select-cosmetic {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  color: #ffd700;
+  font-family: var(--font-title);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.cosmetic-card.selected .btn-select-cosmetic {
+  background: #ffd700;
+  color: #1a0808;
+}
+
+/* Credits Screen */
+.credits-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.credits-crest {
+  font-size: 3rem;
+  filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.5));
+}
+
+.credits-title {
+  font-family: var(--font-title);
+  font-size: 2rem;
+  font-weight: 900;
+  color: #ffd700;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.credits-tagline {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: #ffffff;
+  font-style: italic;
+  margin: 0;
+}
+
+.credits-divider {
+  width: 60%;
+  border: none;
+  border-top: 1px solid rgba(229, 184, 94, 0.3);
+  margin: 0.5rem 0;
+}
+
+.credits-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.credits-block h4 {
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #ffd700;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.credits-block p {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: #e5dacb;
+  margin: 0;
+}
+
+/* Photo Mode Deck */
+.photo-mode-deck {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(880px, 92vw);
+  background: rgba(14, 8, 12, 0.92);
+  border: 1.5px solid rgba(255, 215, 0, 0.6);
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.25), 0 16px 40px rgba(0, 0, 0, 0.85);
+  border-radius: 14px;
+  padding: 1rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  z-index: 150;
+  backdrop-filter: blur(12px);
+  animation: photoDeckSlideUp 0.3s ease-out;
+}
+
+@keyframes photoDeckSlideUp {
+  from {
+    transform: translate(-50%, 40px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.photo-deck-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(229, 184, 94, 0.25);
+  padding-bottom: 0.5rem;
+}
+
+.photo-mode-title {
+  font-family: var(--font-title);
+  font-size: 1rem;
+  font-weight: 800;
+  color: #ffd700;
+  letter-spacing: 0.08em;
+}
+
+.photo-deck-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-deck-action {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  color: #ffffff;
+  font-family: var(--font-title);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-deck-action:hover {
+  background: rgba(255, 215, 0, 0.3);
+}
+
+.btn-deck-action.btn-danger {
+  background: rgba(183, 21, 64, 0.3);
+  border-color: #b71540;
+}
+
+.btn-deck-action.btn-danger:hover {
+  background: rgba(183, 21, 64, 0.6);
+}
+
+.photo-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.slider-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 140px;
+}
+
+.slider-control label {
+  font-family: var(--font-title);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #cbb49e;
+}
+
+.slider-control input[type="range"] {
+  accent-color: #ffd700;
+  cursor: pointer;
+}
+
+.filter-btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.filter-btn-group label {
+  font-family: var(--font-title);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #cbb49e;
+}
+
+.filter-chips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  background: rgba(28, 16, 22, 0.8);
+  border: 1px solid rgba(229, 184, 94, 0.3);
+  color: #c9b4a4;
+  font-family: var(--font-title);
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.filter-chip.active {
+  background: #ffd700;
+  color: #1a0808;
+  border-color: #ffd700;
+}
+
+/* Photo Filter Fullscreen Overlays */
+.photo-filter-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.photo-filter-overlay.filter-golden_hour {
+  background: radial-gradient(circle, rgba(255, 180, 50, 0.12) 0%, rgba(200, 100, 20, 0.22) 100%);
+  mix-blend-mode: overlay;
+}
+
+.photo-filter-overlay.filter-noir {
+  backdrop-filter: grayscale(1) contrast(1.25);
+}
+
+.photo-filter-overlay.filter-mythic {
+  background: radial-gradient(circle, rgba(142, 68, 173, 0.15) 0%, rgba(41, 128, 185, 0.22) 100%);
+  mix-blend-mode: color-dodge;
+}
+
+.photo-filter-overlay.filter-vibrant {
+  backdrop-filter: saturate(1.6) contrast(1.1);
+}
+
+/* Photo Mode Hidden UI mode */
+body.photo-mode-hidden-ui .hud-header,
+body.photo-mode-hidden-ui .hero-combat-hud,
+body.photo-mode-hidden-ui .telemetry-panel,
+body.photo-mode-hidden-ui .camera-controls-deck,
+body.photo-mode-hidden-ui .control-deck,
+body.photo-mode-hidden-ui .hud-footer,
+body.photo-mode-hidden-ui .milestone-badge,
+body.photo-mode-hidden-ui #photo-mode-deck {
+  display: none !important;
+}
+
+/* High Contrast Mode Override (PRD Section 15) */
+body.high-contrast-mode {
+  filter: contrast(1.15);
+}
+
+body.high-contrast-mode .hud-header,
+body.high-contrast-mode .modal-card,
+body.high-contrast-mode .dialogue-window {
+  background: #000000 !important;
+  border-color: #ffffff !important;
+}
+
+body.high-contrast-mode .dialogue-body-text,
+body.high-contrast-mode .modal-desc,
+body.high-contrast-mode .settings-desc {
+  color: #ffffff !important;
+}
+
+/* Large Subtitles Mode Override */
+body.large-subtitles-mode .dialogue-body-text {
+  font-size: 1.45rem !important;
+  line-height: 1.8 !important;
+}
+
+
 
 
 

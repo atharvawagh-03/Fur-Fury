@@ -1,12 +1,16 @@
 /**
- * Rhazakar 3D Dragon Model & Skeletal Rig
- * Fully articulated 3D colossal scarlet dragon model conforming to PRD Section 10 & 11:
- * - Colossal wingspan (~30 meters), muscular chest, armored keel scutes
- * - Articulated serpentine neck, expressive head, hinged jaw, glowing amber eyes
- * - Sweeping obsidian horn ridges with dedicated mount perch for Lady Anuki
- * - Multi-jointed wings with leathery membranes and finger phalanges
- * - Heavy taloned forelegs and hindlegs for earth-shattering landings
- * - Segmented spine and dynamic undulating tail with dorsal fins
+ * Rhazakar 3D Dragon Model & Skeletal Rig - Refined High-Fidelity Edition
+ * Hand-sculpted, fully articulated 3D colossal scarlet dragon model conforming to:
+ * - Authoritative Reference Artwork ("THE RED DRAGON: LOYAL • POWERFUL • FEARLESS")
+ * - Smooth, organic draconic anatomy: no sharp/boxy primitives, beautifully rounded edges
+ * - Sculpted reptilian skull with organic snout, flared nostrils, and articulated jaw
+ * - Sweeping backward-curving obsidian horn crown with cheek and brow horn crests
+ * - Elegant S-curved muscular serpentine neck with smooth wrapping cream-sand underbelly scutes
+ * - Robust muscular chest with curved armored keel plates and continuous dorsal spine ridge
+ * - Muscular articulated legs with defined joints and sculpted paws with 4 curved talons + rear spur
+ * - Multi-jointed colossal wings with leathery membranes and finger phalanges
+ * - Dedicated mount perch for Lady Anuki positioned securely behind the crest
+ * - Multi-segment serpentine tail tapering smoothly to the finned tip
  */
 
 import * as THREE from 'three';
@@ -134,14 +138,20 @@ export class RhazakarModel {
     pelvis.position.set(0, 4.8, 0);
     root.add(pelvis);
 
-    const pelvisMesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.8, 1.5, 3.2, 12),
-      scalesMat
-    );
+    // Smooth rounded pelvis mesh (24 radial segments, rounded contour)
+    const pelvisGeo = new THREE.CylinderGeometry(1.8, 1.5, 3.2, 24, 2);
+    pelvisGeo.scale(1.0, 1.0, 0.95);
+    const pelvisMesh = new THREE.Mesh(pelvisGeo, scalesMat);
     pelvisMesh.rotation.x = Math.PI * 0.5;
     pelvisMesh.castShadow = true;
     pelvisMesh.receiveShadow = true;
     pelvis.add(pelvisMesh);
+
+    // Smooth curved hip scutes
+    const pelvisScute = this.createCurvedUnderbellyShield(2.2, 2.0, 2.8, 0.35, bellyMat);
+    pelvisScute.position.set(0, -1.05, 0);
+    pelvisScute.rotation.x = Math.PI * 0.5;
+    pelvis.add(pelvisScute);
 
     // 3. Spine (Abdomen)
     const spine = new THREE.Group();
@@ -149,22 +159,32 @@ export class RhazakarModel {
     spine.position.set(0, 0.4, -2.4);
     pelvis.add(spine);
 
-    const spineMesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(2.1, 1.8, 3.5, 12),
-      scalesMat
-    );
+    // Smooth rounded abdomen cylinder (24 segments)
+    const spineGeo = new THREE.CylinderGeometry(2.15, 1.85, 3.5, 24, 2);
+    spineGeo.scale(1.05, 1.0, 1.15);
+    const spineMesh = new THREE.Mesh(spineGeo, scalesMat);
     spineMesh.rotation.x = Math.PI * 0.5;
     spineMesh.castShadow = true;
+    spineMesh.receiveShadow = true;
     spine.add(spineMesh);
 
-    // Underbelly Scute Plates on spine
-    const spineScute = new THREE.Mesh(
-      new THREE.BoxGeometry(2.4, 0.6, 3.2),
-      bellyMat
-    );
+    // Smooth curved underbelly scute plates on spine (no boxy edges)
+    const spineScute = this.createCurvedUnderbellyShield(2.35, 2.1, 3.2, 0.4, bellyMat);
     spineScute.position.set(0, -1.2, 0);
-    spineScute.castShadow = true;
+    spineScute.rotation.x = Math.PI * 0.5;
     spine.add(spineScute);
+
+    // Dorsal Spines on spine
+    for (let i = 0; i < 3; i++) {
+      const spineSpike = new THREE.Mesh(
+        new THREE.ConeGeometry(0.18, 1.1, 12),
+        hornMat
+      );
+      spineSpike.position.set(0, 2.0, -1.0 + i * 1.0);
+      spineSpike.rotation.x = -0.3;
+      spineSpike.castShadow = true;
+      spine.add(spineSpike);
+    }
 
     // 4. Chest & Keel (Massive forward ribcage & shoulder anchor)
     const chest = new THREE.Group();
@@ -172,39 +192,36 @@ export class RhazakarModel {
     chest.position.set(0, 0.6, -2.8);
     spine.add(chest);
 
-    const chestMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(2.8, 16, 12),
-      scalesMat
-    );
-    chestMesh.scale.set(1.15, 1.3, 1.4);
+    // Smooth volumetric ribcage sphere (32x24 segments)
+    const chestGeo = new THREE.SphereGeometry(2.8, 32, 24);
+    chestGeo.scale(1.18, 1.32, 1.42);
+    const chestMesh = new THREE.Mesh(chestGeo, scalesMat);
     chestMesh.castShadow = true;
     chestMesh.receiveShadow = true;
     chest.add(chestMesh);
 
-    // Broad Keel plate
-    const keelMesh = new THREE.Mesh(
-      new THREE.ConeGeometry(1.6, 3.6, 8),
-      bellyMat
-    );
-    keelMesh.rotation.x = -Math.PI * 0.45;
-    keelMesh.position.set(0, -1.6, -0.4);
-    keelMesh.scale.set(1.4, 1.0, 0.6);
+    // Broad smoothly sculpted armored keel scute plate (matching front view in reference)
+    const keelGeo = new THREE.CylinderGeometry(1.3, 2.2, 3.8, 24, 2, false, -Math.PI * 0.4, Math.PI * 0.8);
+    keelGeo.scale(1.4, 1.0, 0.7);
+    const keelMesh = new THREE.Mesh(keelGeo, bellyMat);
+    keelMesh.rotation.x = -Math.PI * 0.46;
+    keelMesh.position.set(0, -1.5, -0.3);
     keelMesh.castShadow = true;
     chest.add(keelMesh);
 
-    // Dorsal Spines on chest
+    // Dorsal Spines on chest (Sleek backward raked, matching scale & spike detail)
     for (let i = 0; i < 4; i++) {
-      const spineSpike = new THREE.Mesh(
-        new THREE.ConeGeometry(0.2, 1.2, 6),
-        hornMat
-      );
-      spineSpike.position.set(0, 2.2, -1.2 + i * 0.9);
-      spineSpike.rotation.x = -0.35;
+      const spikeGeo = new THREE.ConeGeometry(0.2, 1.3 - i * 0.05, 12);
+      spikeGeo.scale(1.0, 1.0, 0.6);
+      const spineSpike = new THREE.Mesh(spikeGeo, hornMat);
+      spineSpike.position.set(0, 2.25, -1.3 + i * 0.85);
+      spineSpike.rotation.x = -0.38;
       spineSpike.castShadow = true;
       chest.add(spineSpike);
     }
 
-    // 5. Neck Segments (Serpentine arc forward and up)
+    // 5. Neck Segments (Serpentine arc forward and up, smoothly contoured)
+    // Neck 1 (Base of neck)
     const neck1 = new THREE.Group();
     neck1.name = 'Dragon_Neck1';
     neck1.position.set(0, 1.2, -2.6);
@@ -212,7 +229,7 @@ export class RhazakarModel {
     chest.add(neck1);
 
     const neck1Mesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.6, 2.0, 2.5, 12),
+      new THREE.CylinderGeometry(1.65, 2.05, 2.5, 24),
       scalesMat
     );
     neck1Mesh.position.set(0, 1.0, -0.3);
@@ -220,26 +237,20 @@ export class RhazakarModel {
     neck1Mesh.castShadow = true;
     neck1.add(neck1Mesh);
 
-    // Cream-sand underbelly/throat scute shield on neck 1 (Reference: Front & Side view)
-    const neck1Scute = new THREE.Mesh(
-      new THREE.BoxGeometry(1.9, 0.45, 2.2),
-      bellyMat
-    );
-    neck1Scute.position.set(0, 0.6, -1.1);
+    // Smooth curved throat/underbelly scute on neck 1 (wraps smoothly around anterior throat)
+    const neck1Scute = this.createCurvedThroatShield(1.72, 2.12, 2.4, bellyMat);
+    neck1Scute.position.set(0, 1.0, -0.35);
     neck1Scute.rotation.x = 0.2;
-    neck1Scute.castShadow = true;
     neck1.add(neck1Scute);
 
-    // Dorsal neck spike (Reference: Scale & Spike detail)
-    const neck1Spike = new THREE.Mesh(
-      new THREE.ConeGeometry(0.18, 1.1, 6),
-      hornMat
-    );
+    // Dorsal neck spike 1
+    const neck1Spike = new THREE.Mesh(new THREE.ConeGeometry(0.18, 1.15, 12), hornMat);
     neck1Spike.position.set(0, 2.1, 0.4);
     neck1Spike.rotation.x = -0.4;
     neck1Spike.castShadow = true;
     neck1.add(neck1Spike);
 
+    // Neck 2 (Mid neck arch)
     const neck2 = new THREE.Group();
     neck2.name = 'Dragon_Neck2';
     neck2.position.set(0, 2.0, -0.6);
@@ -247,7 +258,7 @@ export class RhazakarModel {
     neck1.add(neck2);
 
     const neck2Mesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.3, 1.6, 2.4, 12),
+      new THREE.CylinderGeometry(1.35, 1.65, 2.4, 24),
       scalesMat
     );
     neck2Mesh.position.set(0, 0.9, -0.2);
@@ -255,26 +266,20 @@ export class RhazakarModel {
     neck2Mesh.castShadow = true;
     neck2.add(neck2Mesh);
 
-    // Cream-sand scute on neck 2
-    const neck2Scute = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 0.4, 2.0),
-      bellyMat
-    );
-    neck2Scute.position.set(0, 0.5, -0.9);
+    // Smooth curved throat scute on neck 2
+    const neck2Scute = this.createCurvedThroatShield(1.42, 1.72, 2.3, bellyMat);
+    neck2Scute.position.set(0, 0.9, -0.25);
     neck2Scute.rotation.x = 0.15;
-    neck2Scute.castShadow = true;
     neck2.add(neck2Scute);
 
     // Dorsal neck spike 2
-    const neck2Spike = new THREE.Mesh(
-      new THREE.ConeGeometry(0.16, 0.95, 6),
-      hornMat
-    );
-    neck2Spike.position.set(0, 1.8, 0.3);
+    const neck2Spike = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.05, 12), hornMat);
+    neck2Spike.position.set(0, 1.85, 0.3);
     neck2Spike.rotation.x = -0.35;
     neck2Spike.castShadow = true;
     neck2.add(neck2Spike);
 
+    // Neck 3 (Throat leading into head)
     const neck3 = new THREE.Group();
     neck3.name = 'Dragon_Neck3';
     neck3.position.set(0, 1.8, -0.4);
@@ -282,163 +287,186 @@ export class RhazakarModel {
     neck2.add(neck3);
 
     const neck3Mesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.0, 1.3, 2.2, 12),
+      new THREE.CylinderGeometry(1.05, 1.35, 2.2, 24),
       scalesMat
     );
     neck3Mesh.position.set(0, 0.8, -0.2);
     neck3Mesh.castShadow = true;
     neck3.add(neck3Mesh);
 
-    // Cream-sand throat scute on neck 3
-    const neck3Scute = new THREE.Mesh(
-      new THREE.BoxGeometry(1.3, 0.35, 1.8),
-      bellyMat
-    );
-    neck3Scute.position.set(0, 0.45, -0.7);
-    neck3Scute.rotation.x = 0.1;
-    neck3Scute.castShadow = true;
+    // Smooth curved throat scute on neck 3
+    const neck3Scute = this.createCurvedThroatShield(1.12, 1.42, 2.1, bellyMat);
+    neck3Scute.position.set(0, 0.8, -0.25);
     neck3.add(neck3Scute);
 
     // Dorsal neck spike 3
-    const neck3Spike = new THREE.Mesh(
-      new THREE.ConeGeometry(0.14, 0.8, 6),
-      hornMat
-    );
-    neck3Spike.position.set(0, 1.5, 0.2);
+    const neck3Spike = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.9, 12), hornMat);
+    neck3Spike.position.set(0, 1.55, 0.2);
     neck3Spike.rotation.x = -0.3;
     neck3Spike.castShadow = true;
     neck3.add(neck3Spike);
 
-    // 6. Head & Skull
+    // 6. Sculpted Dragon Head & Skull (Conforming exactly to reference head close-up)
     const head = new THREE.Group();
     head.name = 'Dragon_Head';
     head.position.set(0, 1.6, -0.5);
     neck3.add(head);
 
-    // Cranium
-    const cranium = new THREE.Mesh(
-      new THREE.BoxGeometry(2.0, 1.5, 2.4),
-      scalesMat
-    );
-    cranium.position.set(0, 0.2, -0.4);
+    // Sculpted organic Cranium (smooth rounded reptilian skull, no box)
+    const craniumGeo = new THREE.SphereGeometry(1.25, 32, 24);
+    craniumGeo.scale(1.05, 0.85, 1.35);
+    const cranium = new THREE.Mesh(craniumGeo, scalesMat);
+    cranium.position.set(0, 0.25, -0.4);
     cranium.castShadow = true;
+    cranium.receiveShadow = true;
     head.add(cranium);
 
-    // Snout / Upper Muzzle
-    const snout = new THREE.Mesh(
-      new THREE.ConeGeometry(1.2, 2.8, 8),
-      scalesMat
-    );
+    // Muzzle / Snout: Smoothly tapered, organic nasal bridge with smooth normals
+    const snoutGeo = new THREE.CylinderGeometry(0.65, 1.15, 2.7, 24, 4);
+    snoutGeo.scale(1.15, 1.0, 0.8);
+    const snout = new THREE.Mesh(snoutGeo, scalesMat);
     snout.rotation.x = Math.PI * 0.5;
-    snout.position.set(0, 0.1, -2.4);
-    snout.scale.set(1.2, 1.0, 0.85);
+    snout.position.set(0, 0.12, -2.05);
     snout.castShadow = true;
     head.add(snout);
 
-    // Nostril ridges with heat glow
-    const nostrilL = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), hornMat);
-    nostrilL.position.set(-0.45, 0.45, -3.2);
+    // Sculpted nasal crest ridge running along top of snout
+    const crestGeo = new THREE.CylinderGeometry(0.08, 0.18, 2.4, 16);
+    crestGeo.scale(0.6, 1.0, 1.8);
+    const crest = new THREE.Mesh(crestGeo, hornMat);
+    crest.rotation.x = Math.PI * 0.5;
+    crest.position.set(0, 0.52, -2.1);
+    head.add(crest);
+
+    // Flared Organic Nostril Ridges
+    const nostrilL = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), hornMat);
+    nostrilL.scale.set(0.8, 0.9, 1.4);
+    nostrilL.position.set(-0.46, 0.38, -3.1);
     head.add(nostrilL);
 
-    const nostrilR = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), hornMat);
-    nostrilR.position.set(0.45, 0.45, -3.2);
+    const nostrilR = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), hornMat);
+    nostrilR.scale.set(0.8, 0.9, 1.4);
+    nostrilR.position.set(0.46, 0.38, -3.1);
     head.add(nostrilR);
 
-    // Brow ridges & Amber Eyes
-    const eyeBrowL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 1.2), hornMat);
-    eyeBrowL.position.set(-1.0, 0.65, -0.9);
-    eyeBrowL.rotation.z = 0.35;
+    // Sculpted Draconic Brow Ridges & Glowing Amber Eyes (Head Close-up Reference)
+    const browGeo = new THREE.CylinderGeometry(0.22, 0.28, 1.3, 16);
+    browGeo.scale(0.8, 1.0, 1.4);
+
+    const eyeBrowL = new THREE.Mesh(browGeo, hornMat);
+    eyeBrowL.position.set(-0.95, 0.58, -0.9);
+    eyeBrowL.rotation.set(-0.1, -0.2, 0.4);
     head.add(eyeBrowL);
 
-    const eyeBrowR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 1.2), hornMat);
-    eyeBrowR.position.set(1.0, 0.65, -0.9);
-    eyeBrowR.rotation.z = -0.35;
+    const eyeBrowR = new THREE.Mesh(browGeo, hornMat);
+    eyeBrowR.position.set(0.95, 0.58, -0.9);
+    eyeBrowR.rotation.set(-0.1, 0.2, -0.4);
     head.add(eyeBrowR);
 
-    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.35, 14, 14), eyeMat);
+    // Glowing Amber Reptilian Eyes
+    const eyeGeo = new THREE.SphereGeometry(0.35, 20, 20);
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
     eyeL.position.set(-0.95, 0.4, -0.85);
+    eyeL.rotation.y = -0.25;
     head.add(eyeL);
 
-    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.35, 14, 14), eyeMat);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
     eyeR.position.set(0.95, 0.4, -0.85);
+    eyeR.rotation.y = 0.25;
     head.add(eyeR);
 
-    // Lateral Cheek / Jaw Horn Spikes (Reference: Head Close-up)
+    // Lateral Cheek / Jaw Horn Spikes (Reference: Head Close-up has 3 distinct flared spines)
     for (const side of [-1, 1]) {
-      const cheekHorn1 = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.75, 6), hornMat);
-      cheekHorn1.position.set(side * 1.15, -0.05, -0.6);
-      cheekHorn1.rotation.set(-0.25, 0, side * -0.9);
+      // Primary cheek flare spike
+      const cheekHorn1 = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.85, 12), hornMat);
+      cheekHorn1.position.set(side * 1.15, 0.05, -0.5);
+      cheekHorn1.rotation.set(-0.25, 0, side * -0.95);
       cheekHorn1.castShadow = true;
       head.add(cheekHorn1);
 
-      const cheekHorn2 = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.6, 6), hornMat);
-      cheekHorn2.position.set(side * 1.05, -0.15, -1.3);
-      cheekHorn2.rotation.set(-0.2, 0, side * -0.85);
+      // Mid cheek spike
+      const cheekHorn2 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.7, 12), hornMat);
+      cheekHorn2.position.set(side * 1.08, -0.05, -1.2);
+      cheekHorn2.rotation.set(-0.2, 0, side * -0.9);
       cheekHorn2.castShadow = true;
       head.add(cheekHorn2);
+
+      // Anterior cheek spike
+      const cheekHorn3 = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.55, 12), hornMat);
+      cheekHorn3.position.set(side * 0.98, -0.15, -1.8);
+      cheekHorn3.rotation.set(-0.15, 0, side * -0.8);
+      cheekHorn3.castShadow = true;
+      head.add(cheekHorn3);
     }
 
-    // Upper fangs
-    for (let f = -1; f <= 1; f += 0.5) {
-      if (Math.abs(f) < 0.2) continue;
-      const upperFang = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.5, 6), fangMat);
-      upperFang.position.set(f * 0.8, -0.3, -2.2 - Math.abs(f) * 0.4);
-      upperFang.rotation.x = Math.PI;
+    // Upper fangs (Sleek ivory fangs along upper jaw)
+    for (let f = -1; f <= 1; f += 0.4) {
+      if (Math.abs(f) < 0.15) continue;
+      const upperFang = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.55, 12), fangMat);
+      upperFang.position.set(f * 0.72, -0.25, -2.0 - Math.abs(f) * 0.45);
+      upperFang.rotation.set(Math.PI * 0.95, 0, -f * 0.15);
       head.add(upperFang);
     }
 
-    // Hinged Lower Jaw
+    // Hinged Lower Jaw - Sculpted organic curvature (no box)
     const jaw = new THREE.Group();
     jaw.name = 'Dragon_Jaw';
-    jaw.position.set(0, -0.4, -0.6);
+    jaw.position.set(0, -0.35, -0.6);
     head.add(jaw);
 
-    const jawMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 0.6, 2.6),
-      scalesMat
-    );
-    jawMesh.position.set(0, -0.2, -1.3);
+    // Smooth rounded jaw body
+    const jawGeo = new THREE.CylinderGeometry(0.65, 0.95, 2.5, 24, 3);
+    jawGeo.scale(1.05, 0.65, 0.85);
+    const jawMesh = new THREE.Mesh(jawGeo, scalesMat);
+    jawMesh.rotation.x = Math.PI * 0.5;
+    jawMesh.position.set(0, -0.15, -1.25);
     jawMesh.castShadow = true;
     jaw.add(jawMesh);
 
-    // Cream-sand scute on lower jaw / chin
-    const jawScute = new THREE.Mesh(
-      new THREE.BoxGeometry(1.4, 0.22, 2.3),
-      bellyMat
-    );
-    jawScute.position.set(0, -0.45, -1.25);
-    jawScute.castShadow = true;
+    // Smooth curved chin & under-jaw scute shield
+    const jawScute = this.createCurvedThroatShield(0.72, 1.02, 2.4, bellyMat);
+    jawScute.position.set(0, -0.32, -1.25);
+    jawScute.rotation.x = Math.PI * 0.5;
     jaw.add(jawScute);
 
     // Lower fangs
-    for (let f = -1; f <= 1; f += 0.5) {
-      if (Math.abs(f) < 0.2) continue;
-      const lowerFang = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.5, 6), fangMat);
-      lowerFang.position.set(f * 0.7, 0.25, -1.8 - Math.abs(f) * 0.4);
+    for (let f = -1; f <= 1; f += 0.45) {
+      if (Math.abs(f) < 0.15) continue;
+      const lowerFang = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.48, 12), fangMat);
+      lowerFang.position.set(f * 0.62, 0.18, -1.7 - Math.abs(f) * 0.45);
+      lowerFang.rotation.set(-0.15, 0, f * 0.15);
       jaw.add(lowerFang);
     }
 
     // Throat Heartfire Glow
-    const throatCore = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 10), heartfireMat);
-    throatCore.position.set(0, -0.1, -1.1);
+    const throatCore = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), heartfireMat);
+    throatCore.position.set(0, -0.05, -1.1);
     head.add(throatCore);
 
     const throatLight = new THREE.PointLight(0xff5500, 2.5, 12, 1.8);
     throatLight.position.set(0, 0, -1.2);
     head.add(throatLight);
 
-    // Sweeping Obsidian Horn Crowns
-    const hornL = this.createHornBranch(hornMat, true);
-    hornL.position.set(-0.85, 0.9, 0.4);
-    hornL.rotation.set(-0.35, -0.25, 0.2);
+    // Sweeping Obsidian Horn Crowns (Sleek, aerodynamic S-curve matching reference!)
+    const hornL = this.createRefinedHornBranch(hornMat, true);
+    hornL.position.set(-0.75, 0.85, 0.35);
+    hornL.rotation.set(-0.35, -0.22, 0.18);
     head.add(hornL);
 
-    const hornR = this.createHornBranch(hornMat, false);
-    hornR.position.set(0.85, 0.9, 0.4);
-    hornR.rotation.set(-0.35, 0.25, -0.2);
+    const hornR = this.createRefinedHornBranch(hornMat, false);
+    hornR.position.set(0.75, 0.85, 0.35);
+    hornR.rotation.set(-0.35, 0.22, -0.18);
     head.add(hornR);
 
-    // Dedicated Perch Platform between the Horns for Lady Anuki
+    // Secondary Crown Spikes behind the main horns
+    for (const side of [-1, 1]) {
+      const crownSpike = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.85, 12), hornMat);
+      crownSpike.position.set(side * 0.45, 0.95, 0.65);
+      crownSpike.rotation.set(-0.6, side * -0.2, side * 0.2);
+      head.add(crownSpike);
+    }
+
+    // Dedicated Perch Platform between the Horns for Lady Anuki (Reference: "IN-GAME (FLYING)")
     const perchSocket = new THREE.Group();
     perchSocket.name = 'Perch_Socket_Anuki';
     perchSocket.position.set(0, 0.95, 0.2);
@@ -451,14 +479,14 @@ export class RhazakarModel {
 
     // Leather mount saddle cushion & grip rim
     const saddlePad = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.65, 0.75, 0.18, 12),
+      new THREE.CylinderGeometry(0.65, 0.75, 0.18, 20),
       saddleMat
     );
     saddlePad.castShadow = true;
     perchSocket.add(saddlePad);
 
     const saddleRim = new THREE.Mesh(
-      new THREE.TorusGeometry(0.68, 0.08, 8, 16),
+      new THREE.TorusGeometry(0.68, 0.08, 12, 24),
       hornMat
     );
     saddleRim.rotation.x = Math.PI * 0.5;
@@ -467,7 +495,7 @@ export class RhazakarModel {
     // Breath vapor socket at the tip of the snout
     const snoutSocket = new THREE.Group();
     snoutSocket.name = 'Snout_Socket_Breath';
-    snoutSocket.position.set(0, -0.2, -3.2);
+    snoutSocket.position.set(0, -0.1, -3.3);
     head.add(snoutSocket);
 
     // Flank attachment anchors for wing membranes
@@ -494,29 +522,29 @@ export class RhazakarModel {
     this.group.add(rightWing.membrane);
     this.rightWingAnchors = rightWing.anchors;
 
-    // 8. Forelegs (Shoulder -> Thigh -> Shin -> Taloned Foot)
+    // 8. Forelegs (Smooth, muscular limbs & sculpted taloned paws)
     const { thigh: frontThighL, shin: frontShinL, foot: frontFootL } =
-      this.createLeg(scalesMat, hornMat, false, true);
+      this.createRefinedLeg(scalesMat, hornMat, false, true);
     frontThighL.position.set(-2.2, -0.6, -1.8);
     chest.add(frontThighL);
 
     const { thigh: frontThighR, shin: frontShinR, foot: frontFootR } =
-      this.createLeg(scalesMat, hornMat, false, false);
+      this.createRefinedLeg(scalesMat, hornMat, false, false);
     frontThighR.position.set(2.2, -0.6, -1.8);
     chest.add(frontThighR);
 
-    // 9. Hind Legs
+    // 9. Hind Legs (Muscular predator thighs, defined hocks & talons)
     const { thigh: hindThighL, shin: hindShinL, foot: hindFootL } =
-      this.createLeg(scalesMat, hornMat, true, true);
+      this.createRefinedLeg(scalesMat, hornMat, true, true);
     hindThighL.position.set(-2.0, -0.4, 0.4);
     pelvis.add(hindThighL);
 
     const { thigh: hindThighR, shin: hindShinR, foot: hindFootR } =
-      this.createLeg(scalesMat, hornMat, true, false);
+      this.createRefinedLeg(scalesMat, hornMat, true, false);
     hindThighR.position.set(2.0, -0.4, 0.4);
     pelvis.add(hindThighR);
 
-    // 10. Multi-segment Serpentine Tail
+    // 10. Multi-segment Serpentine Tail (Smoothly tapering with dorsal spines)
     const tailSegments: THREE.Group[] = [];
     let parentTail: THREE.Group = pelvis;
     const tailCount = 6;
@@ -527,10 +555,10 @@ export class RhazakarModel {
       parentTail.add(tailSeg);
       tailSegments.push(tailSeg);
 
-      const rad = Math.max(0.4, 1.4 - t * 0.18);
+      const rad = Math.max(0.35, 1.4 - t * 0.18);
       const len = 2.4 - t * 0.1;
       const segMesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(rad * 0.8, rad, len, 10),
+        new THREE.CylinderGeometry(rad * 0.82, rad, len, 20),
         scalesMat
       );
       segMesh.rotation.x = Math.PI * 0.5;
@@ -538,12 +566,12 @@ export class RhazakarModel {
       segMesh.castShadow = true;
       tailSeg.add(segMesh);
 
-      // Dorsal ridge spine
+      // Dorsal ridge spine on each tail segment
       const tailSpine = new THREE.Mesh(
-        new THREE.ConeGeometry(0.18, 0.9 - t * 0.1, 6),
+        new THREE.ConeGeometry(0.16, 0.9 - t * 0.1, 12),
         hornMat
       );
-      tailSpine.position.set(0, rad + 0.3, len * 0.5);
+      tailSpine.position.set(0, rad + 0.35, len * 0.5);
       tailSpine.rotation.x = 0.4;
       tailSpine.castShadow = true;
       tailSeg.add(tailSpine);
@@ -551,12 +579,12 @@ export class RhazakarModel {
       // Tail blade / spade tip on last segment
       if (t === tailCount - 1) {
         const spadeTip = new THREE.Mesh(
-          new THREE.ConeGeometry(0.6, 2.0, 4),
+          new THREE.ConeGeometry(0.55, 2.2, 12),
           hornMat
         );
         spadeTip.rotation.x = Math.PI * 0.5;
-        spadeTip.position.set(0, 0, len + 0.8);
-        spadeTip.scale.set(1.6, 0.4, 1.0);
+        spadeTip.position.set(0, 0, len + 0.9);
+        spadeTip.scale.set(1.5, 0.35, 1.0);
         spadeTip.castShadow = true;
         tailSeg.add(spadeTip);
       }
@@ -615,6 +643,57 @@ export class RhazakarModel {
 
     // Initialize wing membrane vertex buffer
     this.updateWingMembranes();
+  }
+
+  /**
+   * Helper: Creates curved wrapping underbelly scute plate with smooth edges (no flat boxes)
+   */
+  private createCurvedUnderbellyShield(
+    radiusTop: number,
+    radiusBottom: number,
+    height: number,
+    _depth: number,
+    material: THREE.Material
+  ): THREE.Mesh {
+    const geo = new THREE.CylinderGeometry(
+      radiusTop,
+      radiusBottom,
+      height,
+      24,
+      2,
+      false,
+      Math.PI * 0.65,
+      Math.PI * 0.7
+    );
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.castShadow = true;
+    return mesh;
+  }
+
+  /**
+   * Helper: Creates curved throat scute shield that wraps anterior neck contours
+   */
+  private createCurvedThroatShield(
+    radiusTop: number,
+    radiusBottom: number,
+    height: number,
+    material: THREE.Material
+  ): THREE.Mesh {
+    const geo = new THREE.CylinderGeometry(
+      radiusTop,
+      radiusBottom,
+      height,
+      24,
+      1,
+      false,
+      Math.PI * 0.7,
+      Math.PI * 0.6
+    );
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.castShadow = true;
+    return mesh;
   }
 
   /**
@@ -694,7 +773,7 @@ export class RhazakarModel {
   }
 
   /**
-   * Builds an articulated dragon wing structure with bones and stretched membrane
+   * Builds an articulated dragon wing structure with smooth bones and stretched membrane
    */
   private createArticulatedWing(
     boneMat: THREE.Material,
@@ -715,10 +794,15 @@ export class RhazakarModel {
     const shoulder = new THREE.Group();
     shoulder.name = isLeft ? 'Wing_Shoulder_L' : 'Wing_Shoulder_R';
 
-    // Humerus (Upper arm bone ~6m long)
+    // Rounded shoulder humerus base cap
+    const shoulderCap = new THREE.Mesh(new THREE.SphereGeometry(1.0, 16, 16), boneMat);
+    shoulderCap.castShadow = true;
+    shoulder.add(shoulderCap);
+
+    // Humerus (Upper arm bone ~6m long, 16 radial segments)
     const humerusLen = 6.2;
     const humerus = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.65, 0.85, humerusLen, 10),
+      new THREE.CylinderGeometry(0.65, 0.85, humerusLen, 16),
       boneMat
     );
     humerus.position.set(sideSign * humerusLen * 0.48, 0.8, -0.3);
@@ -733,10 +817,15 @@ export class RhazakarModel {
     elbow.position.set(sideSign * humerusLen * 0.9, 1.4, -0.6);
     shoulder.add(elbow);
 
-    // Radius / Ulna (Forearm bone ~8m long extending outward)
+    // Rounded elbow joint cap
+    const elbowCap = new THREE.Mesh(new THREE.SphereGeometry(0.75, 16, 16), boneMat);
+    elbowCap.castShadow = true;
+    elbow.add(elbowCap);
+
+    // Radius / Ulna (Forearm bone ~8m long extending outward, 16 radial segments)
     const forearmLen = 7.8;
     const forearm = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.5, 0.65, forearmLen, 10),
+      new THREE.CylinderGeometry(0.5, 0.65, forearmLen, 16),
       boneMat
     );
     forearm.position.set(sideSign * forearmLen * 0.48, 0.2, 0.8);
@@ -751,9 +840,14 @@ export class RhazakarModel {
     wrist.position.set(sideSign * forearmLen * 0.92, 0.3, 1.5);
     elbow.add(wrist);
 
+    // Rounded wrist carpal bulb
+    const wristCap = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16), boneMat);
+    wristCap.castShadow = true;
+    wrist.add(wristCap);
+
     // Wing Thumb / Clutched Spur
     const wingThumb = new THREE.Mesh(
-      new THREE.ConeGeometry(0.25, 1.2, 6),
+      new THREE.ConeGeometry(0.25, 1.2, 12),
       boneMat
     );
     wingThumb.position.set(sideSign * 0.2, 0.8, 0);
@@ -773,7 +867,7 @@ export class RhazakarModel {
       fingerGroup.rotation.y = sideSign * fingerAngles[f];
 
       const phalanx = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.12, 0.3, fLen, 8),
+        new THREE.CylinderGeometry(0.12, 0.3, fLen, 12),
         boneMat
       );
       phalanx.position.set(0, -fLen * 0.48, fLen * 0.45);
@@ -861,9 +955,9 @@ export class RhazakarModel {
   }
 
   /**
-   * Builds an articulated leg (thigh, shin, and multi-taloned foot)
+   * Builds an articulated muscular leg (thigh, shin, and sculpted taloned paw)
    */
-  private createLeg(
+  private createRefinedLeg(
     scalesMat: THREE.Material,
     hornMat: THREE.Material,
     isHind: boolean,
@@ -873,11 +967,16 @@ export class RhazakarModel {
     const thigh = new THREE.Group();
     thigh.name = `${isHind ? 'Hind' : 'Front'}_Thigh_${isLeft ? 'L' : 'R'}`;
 
+    // Rounded muscular hip joint cap
+    const hipCap = new THREE.Mesh(new THREE.SphereGeometry(1.2, 20, 20), scalesMat);
+    hipCap.castShadow = true;
+    thigh.add(hipCap);
+
+    // Muscular thigh cylinder (24 radial segments with smooth normals)
     const thighLen = isHind ? 3.8 : 3.4;
-    const thighMesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.85, 1.25, thighLen, 10),
-      scalesMat
-    );
+    const thighGeo = new THREE.CylinderGeometry(0.9, 1.3, thighLen, 24);
+    thighGeo.scale(1.1, 1.0, 1.15);
+    const thighMesh = new THREE.Mesh(thighGeo, scalesMat);
     thighMesh.position.set(sideSign * 0.4, -thighLen * 0.45, isHind ? 0.4 : -0.2);
     thighMesh.rotation.z = sideSign * 0.2;
     thighMesh.castShadow = true;
@@ -889,76 +988,122 @@ export class RhazakarModel {
     shin.position.set(sideSign * 0.6, -thighLen * 0.9, isHind ? 0.6 : -0.3);
     thigh.add(shin);
 
+    // Rounded knee/hock joint cap
+    const kneeCap = new THREE.Mesh(new THREE.SphereGeometry(0.85, 20, 20), scalesMat);
+    kneeCap.castShadow = true;
+    shin.add(kneeCap);
+
     const shinLen = isHind ? 3.5 : 3.0;
-    const shinMesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.65, 0.85, shinLen, 10),
-      scalesMat
-    );
+    const shinGeo = new THREE.CylinderGeometry(0.7, 0.9, shinLen, 24);
+    shinGeo.scale(1.05, 1.0, 1.1);
+    const shinMesh = new THREE.Mesh(shinGeo, scalesMat);
     shinMesh.position.set(0, -shinLen * 0.45, isHind ? -0.4 : 0.3);
     shinMesh.castShadow = true;
     shin.add(shinMesh);
 
-    // Heavy Taloned Foot
+    // Sculpted Draconic Foot & Curved Talons (No box!)
     const foot = new THREE.Group();
     foot.name = `${isHind ? 'Hind' : 'Front'}_Foot_${isLeft ? 'L' : 'R'}`;
     foot.position.set(0, -shinLen * 0.95, 0);
     shin.add(foot);
 
-    const footMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 0.7, 2.2),
-      scalesMat
-    );
-    footMesh.position.set(0, -0.3, 0.3);
-    footMesh.castShadow = true;
-    foot.add(footMesh);
+    // Sculpted curved tarsal foot arch
+    const footArchGeo = new THREE.SphereGeometry(1.0, 24, 16);
+    footArchGeo.scale(1.25, 0.55, 1.5);
+    const footArchMesh = new THREE.Mesh(footArchGeo, scalesMat);
+    footArchMesh.position.set(0, -0.15, 0.25);
+    footArchMesh.castShadow = true;
+    foot.add(footArchMesh);
 
-    // 4 Curved Talons
-    for (let c = -1; c <= 1; c += 0.66) {
-      const claw = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.9, 6), hornMat);
-      claw.position.set(c * 0.6, -0.45, 1.4);
-      claw.rotation.x = Math.PI * 0.55;
+    // 4 Articulated Toes with Curved Talons spreading outward naturally
+    const toeAngles = [-0.45, -0.15, 0.15, 0.45];
+    const toeOffsets = [-0.65, -0.22, 0.22, 0.65];
+
+    for (let t = 0; t < 4; t++) {
+      const toeGroup = new THREE.Group();
+      toeGroup.position.set(toeOffsets[t], -0.28, 1.05);
+      toeGroup.rotation.y = toeAngles[t];
+      foot.add(toeGroup);
+
+      // Toe digital pad
+      const toePad = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.28, 0.7, 16),
+        scalesMat
+      );
+      toePad.rotation.x = Math.PI * 0.45;
+      toePad.position.set(0, 0, 0.25);
+      toePad.castShadow = true;
+      toeGroup.add(toePad);
+
+      // Large sharp curved talon (16 radial segments, smooth curve)
+      const clawGeo = new THREE.ConeGeometry(0.18, 1.05, 16);
+      clawGeo.scale(1.0, 1.0, 0.7);
+      const claw = new THREE.Mesh(clawGeo, hornMat);
+      claw.position.set(0, -0.1, 0.85);
+      claw.rotation.x = Math.PI * 0.65;
       claw.castShadow = true;
-      foot.add(claw);
+      toeGroup.add(claw);
     }
-    // Back spur claw
-    const backClaw = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.8, 6), hornMat);
-    backClaw.position.set(0, -0.45, -0.7);
-    backClaw.rotation.x = -Math.PI * 0.45;
-    backClaw.castShadow = true;
-    foot.add(backClaw);
+
+    // Rear spur claw (dewclaw)
+    const backSpur = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.85, 14), hornMat);
+    backSpur.position.set(0, -0.2, -0.75);
+    backSpur.rotation.x = -Math.PI * 0.48;
+    backSpur.castShadow = true;
+    foot.add(backSpur);
 
     return { thigh, shin, foot };
   }
 
   /**
-   * Sweeping backward-curving horn branch
+   * Sweeping backward-curving horn branch conforming to Reference Artwork
    */
-  private createHornBranch(hornMat: THREE.Material, isLeft: boolean): THREE.Group {
+  private createRefinedHornBranch(hornMat: THREE.Material, isLeft: boolean): THREE.Group {
     const hornGroup = new THREE.Group();
     const sideSign = isLeft ? -1 : 1;
 
-    // Segmented curved horn
-    const segments = 5;
+    // Multi-segment curved horn with smooth tapering and 16 radial segments
+    const segments = 7;
     let parentNode = hornGroup;
+
     for (let s = 0; s < segments; s++) {
       const segGroup = new THREE.Group();
-      segGroup.position.set(sideSign * 0.25, 0.45, 0.4);
-      segGroup.rotation.x = 0.35;
-      segGroup.rotation.z = sideSign * 0.2;
+      segGroup.position.set(sideSign * 0.20, 0.42, 0.38);
+      // Gentle sweep backward and slightly upward at tips
+      segGroup.rotation.x = 0.32 - s * 0.02;
+      segGroup.rotation.z = sideSign * 0.16;
       parentNode.add(segGroup);
 
-      const rad = Math.max(0.08, 0.45 - s * 0.08);
-      const len = 0.75;
+      const rad = Math.max(0.06, 0.48 - s * 0.065);
+      const len = 0.68;
       const hornSeg = new THREE.Mesh(
-        new THREE.CylinderGeometry(rad * 0.8, rad, len, 8),
+        new THREE.CylinderGeometry(rad * 0.82, rad, len, 16),
         hornMat
       );
       hornSeg.position.set(0, len * 0.5, 0);
       hornSeg.castShadow = true;
       segGroup.add(hornSeg);
 
+      // Horn base ring ridges
+      if (s < 4) {
+        const ridge = new THREE.Mesh(
+          new THREE.TorusGeometry(rad * 1.04, 0.03, 10, 16),
+          hornMat
+        );
+        ridge.rotation.x = Math.PI * 0.5;
+        ridge.position.set(0, 0.05, 0);
+        segGroup.add(ridge);
+      }
+
       parentNode = segGroup;
     }
+
+    // Sharp tapering horn tip
+    const tipGeo = new THREE.ConeGeometry(0.06, 0.55, 16);
+    const tipMesh = new THREE.Mesh(tipGeo, hornMat);
+    tipMesh.position.set(0, 0.5, 0);
+    tipMesh.castShadow = true;
+    parentNode.add(tipMesh);
 
     return hornGroup;
   }

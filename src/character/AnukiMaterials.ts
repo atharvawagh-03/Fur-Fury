@@ -302,13 +302,14 @@ export class AnukiMaterials {
 
   /**
    * Photorealistic Engraved Silver Cuirass Material
+   * Balanced metalness for crisp visibility under directional lighting
    */
   public static createCuirassPhotoMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       map: this.getCuirassPhotoTexture(),
       color: 0xffffff,
-      metalness: 0.9,
-      roughness: 0.22,
+      metalness: 0.25,
+      roughness: 0.25,
     });
   }
 
@@ -318,8 +319,9 @@ export class AnukiMaterials {
   public static createChainmailPhotoMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       map: this.getChainmailPhotoTexture(),
-      metalness: 0.85,
-      roughness: 0.42,
+      color: 0xd8dde2,
+      metalness: 0.35,
+      roughness: 0.45,
     });
   }
 
@@ -329,8 +331,9 @@ export class AnukiMaterials {
   public static createGreavesPhotoMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       map: this.getGreavesPhotoTexture(),
-      metalness: 0.88,
-      roughness: 0.25,
+      color: 0xffffff,
+      metalness: 0.25,
+      roughness: 0.28,
     });
   }
 
@@ -340,6 +343,7 @@ export class AnukiMaterials {
   public static createFurPhotoMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       map: this.getFurPhotoTexture(),
+      color: 0xffeedd,
       roughness: 0.85,
       metalness: 0.05,
     });
@@ -358,7 +362,12 @@ export class AnukiMaterials {
   }
 
   public static createSilverArmorMaterial(): THREE.MeshStandardMaterial {
-    return this.createCuirassPhotoMaterial();
+    return new THREE.MeshStandardMaterial({
+      map: this.getCuirassPhotoTexture(),
+      color: 0xffffff,
+      metalness: 0.9,
+      roughness: 0.22,
+    });
   }
 
   public static createChainmailMaterial(): THREE.MeshStandardMaterial {

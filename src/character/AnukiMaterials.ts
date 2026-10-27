@@ -22,10 +22,12 @@ export class AnukiMaterials {
 
   // Photorealistic reference textures
   private static headPhotoTexture: THREE.Texture | null = null;
+  private static headBackPhotoTexture: THREE.Texture | null = null;
   private static cuirassPhotoTexture: THREE.Texture | null = null;
   private static chainmailPhotoTexture: THREE.Texture | null = null;
   private static greavesPhotoTexture: THREE.Texture | null = null;
   private static furPhotoTexture: THREE.Texture | null = null;
+  private static capePhotoTexture: THREE.Texture | null = null;
 
   /**
    * Exact Photorealistic Head Texture extracted directly from reference artwork
@@ -33,11 +35,26 @@ export class AnukiMaterials {
   public static getHeadPhotoTexture(): THREE.Texture {
     if (this.headPhotoTexture) return this.headPhotoTexture;
 
-    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof (document as any).createElementNS === 'function') {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const loader = new THREE.TextureLoader();
-      this.headPhotoTexture = loader.load('/assets/character/anuki_head_alpha.png');
+      this.headPhotoTexture = loader.load('/assets/character/textures/anuki_head_clean.png');
       this.headPhotoTexture.colorSpace = THREE.SRGBColorSpace;
       return this.headPhotoTexture;
+    }
+    return this.getFurTexture();
+  }
+
+  /**
+   * Fluffy fur back of head texture from turnaround back view
+   */
+  public static getHeadBackPhotoTexture(): THREE.Texture {
+    if (this.headBackPhotoTexture) return this.headBackPhotoTexture;
+
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      const loader = new THREE.TextureLoader();
+      this.headBackPhotoTexture = loader.load('/assets/character/textures/anuki_head_back.png');
+      this.headBackPhotoTexture.colorSpace = THREE.SRGBColorSpace;
+      return this.headBackPhotoTexture;
     }
     return this.getFurTexture();
   }
@@ -48,9 +65,9 @@ export class AnukiMaterials {
   public static getCuirassPhotoTexture(): THREE.Texture {
     if (this.cuirassPhotoTexture) return this.cuirassPhotoTexture;
 
-    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof (document as any).createElementNS === 'function') {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const loader = new THREE.TextureLoader();
-      this.cuirassPhotoTexture = loader.load('/assets/character/anuki_cuirass.png');
+      this.cuirassPhotoTexture = loader.load('/assets/character/textures/anuki_cuirass_clean.png');
       this.cuirassPhotoTexture.colorSpace = THREE.SRGBColorSpace;
       return this.cuirassPhotoTexture;
     }
@@ -58,14 +75,14 @@ export class AnukiMaterials {
   }
 
   /**
-   * Exact Chainmail Photo Texture
+   * Exact Chainmail & Tassets Photo Texture
    */
   public static getChainmailPhotoTexture(): THREE.Texture {
     if (this.chainmailPhotoTexture) return this.chainmailPhotoTexture;
 
-    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof (document as any).createElementNS === 'function') {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const loader = new THREE.TextureLoader();
-      this.chainmailPhotoTexture = loader.load('/assets/character/anuki_chainmail.png');
+      this.chainmailPhotoTexture = loader.load('/assets/character/textures/anuki_skirt_clean.png');
       this.chainmailPhotoTexture.colorSpace = THREE.SRGBColorSpace;
       return this.chainmailPhotoTexture;
     }
@@ -78,13 +95,28 @@ export class AnukiMaterials {
   public static getGreavesPhotoTexture(): THREE.Texture {
     if (this.greavesPhotoTexture) return this.greavesPhotoTexture;
 
-    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof (document as any).createElementNS === 'function') {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const loader = new THREE.TextureLoader();
-      this.greavesPhotoTexture = loader.load('/assets/character/anuki_greaves.png');
+      this.greavesPhotoTexture = loader.load('/assets/character/textures/anuki_greaves_clean.png');
       this.greavesPhotoTexture.colorSpace = THREE.SRGBColorSpace;
       return this.greavesPhotoTexture;
     }
     return this.getArmorTexture();
+  }
+
+  /**
+   * Exact Ivory Cape with Gold Crest Photo Texture
+   */
+  public static getCapePhotoTexture(): THREE.Texture {
+    if (this.capePhotoTexture) return this.capePhotoTexture;
+
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      const loader = new THREE.TextureLoader();
+      this.capePhotoTexture = loader.load('/assets/character/textures/anuki_cape_clean.png');
+      this.capePhotoTexture.colorSpace = THREE.SRGBColorSpace;
+      return this.capePhotoTexture;
+    }
+    return this.getCapeTexture();
   }
 
   /**
@@ -93,7 +125,7 @@ export class AnukiMaterials {
   public static getFurPhotoTexture(): THREE.Texture {
     if (this.furPhotoTexture) return this.furPhotoTexture;
 
-    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof (document as any).createElementNS === 'function') {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const loader = new THREE.TextureLoader();
       this.furPhotoTexture = loader.load('/assets/character/anuki_fur_photo.png');
       this.furPhotoTexture.colorSpace = THREE.SRGBColorSpace;
@@ -293,35 +325,40 @@ export class AnukiMaterials {
     return new THREE.MeshStandardMaterial({
       map: this.getHeadPhotoTexture(),
       transparent: true,
-      alphaTest: 0.08,
-      roughness: 0.65,
-      metalness: 0.05,
+      alphaTest: 0.04,
+      roughness: 0.55,
+      metalness: 0.0,
       side: THREE.DoubleSide,
     });
   }
 
   /**
    * Photorealistic Engraved Silver Cuirass Material
-   * Balanced metalness for crisp visibility under directional lighting
    */
   public static createCuirassPhotoMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       map: this.getCuirassPhotoTexture(),
+      transparent: true,
+      alphaTest: 0.04,
       color: 0xffffff,
-      metalness: 0.25,
-      roughness: 0.25,
+      metalness: 0.55,
+      roughness: 0.22,
+      side: THREE.DoubleSide,
     });
   }
 
   /**
-   * Photorealistic Chainmail Material
+   * Photorealistic Chainmail & Tassets Material
    */
   public static createChainmailPhotoMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       map: this.getChainmailPhotoTexture(),
-      color: 0xd8dde2,
-      metalness: 0.35,
-      roughness: 0.45,
+      transparent: true,
+      alphaTest: 0.04,
+      color: 0xffffff,
+      metalness: 0.50,
+      roughness: 0.32,
+      side: THREE.DoubleSide,
     });
   }
 
@@ -331,9 +368,12 @@ export class AnukiMaterials {
   public static createGreavesPhotoMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       map: this.getGreavesPhotoTexture(),
+      transparent: true,
+      alphaTest: 0.04,
       color: 0xffffff,
-      metalness: 0.25,
-      roughness: 0.28,
+      metalness: 0.55,
+      roughness: 0.25,
+      side: THREE.DoubleSide,
     });
   }
 
@@ -342,10 +382,9 @@ export class AnukiMaterials {
    */
   public static createFurPhotoMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
-      map: this.getFurPhotoTexture(),
-      color: 0xffeedd,
-      roughness: 0.85,
-      metalness: 0.05,
+      color: 0xf4ddb5, // Soft warm cream fur tone
+      roughness: 0.90,
+      metalness: 0.0,
     });
   }
 
@@ -363,9 +402,8 @@ export class AnukiMaterials {
 
   public static createSilverArmorMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
-      map: this.getCuirassPhotoTexture(),
-      color: 0xffffff,
-      metalness: 0.9,
+      color: 0xebf2f8, // Gleaming polished knightly silver
+      metalness: 0.88,
       roughness: 0.22,
     });
   }
@@ -376,10 +414,10 @@ export class AnukiMaterials {
 
   public static createCapeMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
-      map: this.getCapeTexture(),
-      color: 0xfffef9,
-      roughness: 0.8,
-      metalness: 0.05,
+      map: this.getCapePhotoTexture(),
+      color: 0xfffcf7,
+      roughness: 0.82,
+      metalness: 0.02,
       side: THREE.DoubleSide,
     });
   }

@@ -273,7 +273,8 @@ export class AnukiController {
     const res = this.combatSystem.executeLightAttack(this.stamina);
     if (res.success) {
       this.stamina = Math.max(0, this.stamina - res.staminaCost);
-      this.applyLungeImpulse(res.lungeDistance);
+      this.currentSpeed = 0;
+      this.movementVector.set(0, 0, 0);
     }
   }
 
@@ -282,7 +283,8 @@ export class AnukiController {
     const res = this.combatSystem.executeHeavyAttack(this.stamina);
     if (res.success) {
       this.stamina = Math.max(0, this.stamina - res.staminaCost);
-      this.applyLungeImpulse(res.lungeDistance);
+      this.currentSpeed = 0;
+      this.movementVector.set(0, 0, 0);
     }
   }
 
@@ -297,11 +299,6 @@ export class AnukiController {
     if (res.success) {
       this.health = Math.min(this.maxHealth, this.health + res.amountHealed);
     }
-  }
-
-  private applyLungeImpulse(distance: number): void {
-    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.currentRotationY);
-    this.movementVector.addScaledVector(forward, distance * 0.15);
   }
 
   private handleCombatInputs(): void {
@@ -337,9 +334,10 @@ export class AnukiController {
   }
 
   private calculateMovement(deltaTime: number, cameraYaw: number): void {
-    // Don't interrupt attack animations with walking, but allow dodge cancel
+    // Don't interrupt attack animations with walking, keep position firmly stationary
     if (this.combatSystem.isAttacking() && !this.inputManager.isActionJustPressed('dodge')) {
       this.currentSpeed = 0;
+      this.movementVector.set(0, 0, 0);
       return;
     }
 
@@ -494,11 +492,15 @@ export class AnukiController {
     }
     this.animator.setGrounded(this.isGrounded, this.verticalVelocity);
 
-    // Update kinematic rigid body position
+    // Update kinematic rigid body position (lock horizontal position firmly while attacking)
+    const isAttacking = this.combatSystem.isAttacking();
+    const moveX = isAttacking ? 0 : correctedMovement.x;
+    const moveZ = isAttacking ? 0 : correctedMovement.z;
+
     const currentTranslation = this.body.translation();
-    const nextX = currentTranslation.x + correctedMovement.x;
+    const nextX = currentTranslation.x + moveX;
     const nextY = currentTranslation.y + correctedMovement.y;
-    const nextZ = currentTranslation.z + correctedMovement.z;
+    const nextZ = currentTranslation.z + moveZ;
 
     this.body.setNextKinematicTranslation({
       x: nextX,

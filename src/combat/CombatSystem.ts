@@ -583,7 +583,7 @@ export class CombatSystem {
    */
   private performHitboxTrace(bladeTip: THREE.Vector3, bladeBase: THREE.Vector3): void {
     const heroPos = this.model.getRoot().position;
-    const heroForward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.model.getRoot().rotation.y);
+    const heroForward = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.model.getRoot().rotation.y);
 
     for (const target of this.targets) {
       if (this.hitTargetsInCurrentSwing.has(target) || !target.isAlive()) continue;

@@ -328,6 +328,27 @@ export class AnukiModel {
     faceShell.castShadow = true;
     head.add(faceShell);
 
+    // Fluffy fur rear head shell from turnaround back view
+    const headBackMat = new THREE.MeshStandardMaterial({
+      map: AnukiMaterials.getHeadBackPhotoTexture(),
+      color: 0xffffff,
+      roughness: 0.9,
+      side: THREE.DoubleSide,
+    });
+    const headBackGeo = new THREE.PlaneGeometry(0.48, 0.40, 16, 16);
+    const hbPos = headBackGeo.attributes.position;
+    for (let i = 0; i < hbPos.count; i++) {
+      const x = hbPos.getX(i);
+      const y = hbPos.getY(i);
+      hbPos.setZ(i, -Math.pow(x / 0.24, 2) * 0.035 - Math.pow(y / 0.20, 2) * 0.02);
+    }
+    headBackGeo.computeVertexNormals();
+    const headBackMesh = new THREE.Mesh(headBackGeo, headBackMat);
+    headBackMesh.rotation.y = Math.PI;
+    headBackMesh.position.set(0, 0.02, -0.16);
+    headBackMesh.castShadow = true;
+    head.add(headBackMesh);
+
     // Subtle 3D Ear backing volume for profile & 3/4 depth
     const earBackGeo = new THREE.ConeGeometry(0.075, 0.14, 16);
     earBackGeo.scale(1.1, 0.85, 0.35);
@@ -833,10 +854,19 @@ export class AnukiModel {
     }
     capeGeo.computeVertexNormals();
 
+    // Draped ivory cowl hood resting on shoulders at back of neck (turnaround BACK view)
+    const cowlBackGeo = new THREE.TorusGeometry(0.14, 0.038, 14, 28, Math.PI * 1.3);
+    const cowlBackMesh = new THREE.Mesh(cowlBackGeo, capeMat);
+    cowlBackMesh.rotation.set(Math.PI * 0.45, 0, Math.PI * 0.35);
+    cowlBackMesh.position.set(0, 0.11, -0.10);
+    cowlBackMesh.castShadow = true;
+    chestParent.add(cowlBackMesh);
+
     const capeMesh = new THREE.Mesh(capeGeo, capeMat);
+    capeMesh.rotation.y = Math.PI;
     capeMesh.castShadow = true;
     capeMesh.receiveShadow = true;
-    capeMesh.position.set(0, -0.18, -0.14);
+    capeMesh.position.set(0, -0.18, -0.22);
     chestParent.add(capeMesh);
 
     return { capeMesh, capeBones };

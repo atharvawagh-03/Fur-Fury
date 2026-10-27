@@ -381,9 +381,11 @@ export class AnukiMaterials {
    * Photorealistic Golden Fur Material
    */
   public static createFurPhotoMaterial(): THREE.MeshStandardMaterial {
+    const tex = this.getFurPhotoTexture();
     return new THREE.MeshStandardMaterial({
-      color: 0xf4ddb5, // Soft warm cream fur tone
-      roughness: 0.90,
+      map: tex,
+      color: 0xffffff,
+      roughness: 0.88,
       metalness: 0.0,
     });
   }
